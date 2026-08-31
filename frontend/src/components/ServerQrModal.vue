@@ -3,7 +3,7 @@
     <div class="modal qr-poster-modal">
       <div class="modal-head-between">
         <div>
-          <h3 class="modal-title mb-0">📱 Mobile App Server QR Poster</h3>
+          <h3 class="modal-title mb-0">📱 Mobile App Server Connection</h3>
           <p class="text-muted small mb-0">Scan with Cloth Bank mobile app or download printable poster.</p>
         </div>
         <button class="close-x-btn" @click="$emit('close')">✕</button>
@@ -17,7 +17,7 @@
             v-model="serverUrl"
             class="form-control font-bold"
             placeholder="http://192.168.1.68:8000/api"
-            @input="generatePoster"
+            @input="generateQr"
           />
           <button class="btn btn-secondary btn-sm" @click="resetToLocalIp" title="Auto-detect Host">
             Auto Detect
@@ -28,17 +28,59 @@
         </small>
       </div>
 
-      <!-- Printable Poster Preview Frame -->
-      <div class="poster-preview-wrapper">
-        <canvas ref="posterCanvas" class="poster-canvas"></canvas>
+      <!-- Visual Poster Card (Pure HTML/CSS - 100% Reliable Render) -->
+      <div class="poster-card-frame" ref="posterFrame">
+        <div class="poster-header">
+          <div class="poster-badge">🧺 CLOTH BANK</div>
+          <div class="poster-subtitle">Community Clothing Donation Platform</div>
+        </div>
+
+        <div class="poster-body">
+          <h4 class="poster-heading">Scan to Connect Mobile App</h4>
+          <p class="poster-desc">Open Cloth Bank Flutter App & scan to connect</p>
+
+          <!-- Direct Base64 QR Image Render -->
+          <div class="qr-image-wrapper">
+            <img
+              v-if="qrDataUrl"
+              :src="qrDataUrl"
+              class="qr-main-img"
+              alt="Cloth Bank Server QR Code"
+            />
+            <div v-else class="qr-loading-placeholder">
+              <div class="spinner-sm"></div>
+              <span>Generating QR…</span>
+            </div>
+          </div>
+
+          <div class="poster-url-pill">
+            <code>{{ serverUrl || 'http://192.168.1.68:8000/api' }}</code>
+          </div>
+
+          <div class="poster-features-row">
+            <span>🎁 Donate Clothes</span>
+            <span>•</span>
+            <span>🚚 Field Driver</span>
+            <span>•</span>
+            <span>👑 Admin</span>
+          </div>
+        </div>
       </div>
+
+      <!-- Hidden canvas for generating high-res downloadable poster -->
+      <canvas ref="downloadCanvas" style="display: none;"></canvas>
 
       <!-- Action Buttons -->
       <div class="modal-footer justify-content-between mt-3">
         <button class="btn btn-secondary" @click="$emit('close')">Close</button>
-        <button class="btn btn-primary" @click="downloadPosterPng">
-          📥 Download Printable Poster (PNG)
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary" @click="downloadQrOnly">
+            🖼️ Download QR Only
+          </button>
+          <button class="btn btn-primary" @click="downloadPoster">
+            📥 Download Full Poster (PNG)
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -52,6 +94,7 @@ export default {
   data() {
     return {
       serverUrl: 'http://192.168.1.68:8000/api',
+      qrDataUrl: '',
     }
   },
   mounted() {
@@ -65,20 +108,39 @@ export default {
       } else {
         this.serverUrl = `http://${hostname}:8000/api`
       }
-      this.$nextTick(() => {
-        this.generatePoster()
-      })
+      this.generateQr()
     },
-    generatePoster() {
-      const canvas = this.$refs.posterCanvas
-      if (!canvas) return
-      const ctx = canvas.getContext('2d')
-      
+    async generateQr() {
       const targetUrl = (this.serverUrl && this.serverUrl.trim().length > 0)
         ? this.serverUrl.trim()
         : 'http://192.168.1.68:8000/api'
 
-      // High-res poster dimensions (420 x 560)
+      try {
+        const url = await QRCode.toDataURL(targetUrl, {
+          width: 320,
+          margin: 1,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff'
+          }
+        })
+        this.qrDataUrl = url
+      } catch (err) {
+        console.error('QR code generation failed:', err)
+      }
+    },
+    downloadQrOnly() {
+      if (!this.qrDataUrl) return
+      const link = document.createElement('a')
+      link.download = 'ClothBank_Server_QR.png'
+      link.href = this.qrDataUrl
+      link.click()
+    },
+    async downloadPoster() {
+      const canvas = this.$refs.downloadCanvas
+      if (!canvas || !this.qrDataUrl) return
+      const ctx = canvas.getContext('2d')
+      
       canvas.width = 420
       canvas.height = 560
 
@@ -89,11 +151,10 @@ export default {
       ctx.fillStyle = bgGrad
       ctx.fillRect(0, 0, 420, 560)
 
-      // 2. Header Banner
+      // 2. Header
       ctx.fillStyle = '#4f46e5'
       ctx.fillRect(0, 0, 420, 95)
 
-      // Brand Icon & Title
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 20px Inter, sans-serif'
       ctx.textAlign = 'center'
@@ -103,7 +164,7 @@ export default {
       ctx.font = '500 12.5px Inter, sans-serif'
       ctx.fillText('Community Clothing Donation Platform', 210, 68)
 
-      // 3. Instruction Card (White surface)
+      // 3. White Card
       ctx.fillStyle = '#ffffff'
       if (ctx.roundRect) {
         ctx.roundRect(25, 110, 370, 425, 16)
@@ -120,46 +181,23 @@ export default {
       ctx.font = '11.5px Inter, sans-serif'
       ctx.fillText('Open Cloth Bank Flutter App & scan to connect', 210, 160)
 
-      // 4. Synchronous QR Matrix Rendering (100% Reliable, Zero Network Latency)
-      try {
-        const qr = QRCode.create(targetUrl, { errorCorrectionLevel: 'M' })
-        const modules = qr.modules
-        const size = modules.size
-        const targetQrPx = 200
-        const cellSize = Math.floor(targetQrPx / size)
-        const actualQrPx = size * cellSize
-        const offsetX = Math.floor((targetQrPx - actualQrPx) / 2)
-        const startX = 110 + offsetX
-        const startY = 180 + offsetX
-
-        // White background box with border
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(95, 170, 230, 230)
+      // 4. Draw QR image onto canvas
+      const img = new Image()
+      img.onload = () => {
+        ctx.fillStyle = '#f8fafc'
+        ctx.fillRect(100, 175, 220, 220)
         ctx.strokeStyle = '#e2e8f0'
         ctx.lineWidth = 1.5
-        ctx.strokeRect(95, 170, 230, 230)
+        ctx.strokeRect(100, 175, 220, 220)
+        
+        ctx.drawImage(img, 110, 185, 200, 200)
 
-        // Draw individual black blocks
-        ctx.fillStyle = '#0f172a'
-        for (let row = 0; row < size; row++) {
-          for (let col = 0; col < size; col++) {
-            if (modules.get(row, col)) {
-              ctx.fillRect(
-                startX + col * cellSize,
-                startY + row * cellSize,
-                cellSize,
-                cellSize
-              )
-            }
-          }
-        }
-
-        // Server URL text below QR
+        // URL
         ctx.fillStyle = '#4f46e5'
         ctx.font = 'bold 11.5px monospace'
-        ctx.fillText(targetUrl, 210, 426)
+        ctx.fillText(this.serverUrl, 210, 426)
 
-        // Features pill container
+        // Features
         ctx.fillStyle = '#ecfdf5'
         if (ctx.roundRect) {
           ctx.roundRect(40, 450, 340, 44, 10)
@@ -172,17 +210,12 @@ export default {
         ctx.font = '600 11.5px Inter, sans-serif'
         ctx.fillText('🎁 Donate Clothes  •  🚚 Field Driver  •  👑 Admin', 210, 477)
 
-      } catch (err) {
-        console.error('Synchronous QR generation error:', err)
+        const link = document.createElement('a')
+        link.download = 'ClothBank_Server_QR_Poster.png'
+        link.href = canvas.toDataURL('image/png')
+        link.click()
       }
-    },
-    downloadPosterPng() {
-      const canvas = this.$refs.posterCanvas
-      if (!canvas) return
-      const link = document.createElement('a')
-      link.download = 'ClothBank_Server_QR_Poster.png'
-      link.href = canvas.toDataURL('image/png')
-      link.click()
+      img.src = this.qrDataUrl
     }
   }
 }
@@ -212,18 +245,102 @@ export default {
   border-radius: var(--radius-md);
   padding: 12px;
 }
-.poster-preview-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #0f172a;
-  border-radius: var(--radius-lg);
-  padding: 14px;
+
+/* ── Poster Card Frame (Pure HTML/CSS) ── */
+.poster-card-frame {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.35);
+  border: 1px solid #334155;
+  text-align: center;
 }
-.poster-canvas {
-  max-width: 100%;
-  height: auto;
-  border-radius: var(--radius-md);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+.poster-header {
+  background: #4f46e5;
+  padding: 16px 20px;
+  color: #ffffff;
+}
+.poster-badge {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.poster-subtitle {
+  font-size: 12px;
+  color: #c7d2fe;
+  margin-top: 2px;
+}
+.poster-body {
+  background: #ffffff;
+  margin: 12px 14px 14px 14px;
+  border-radius: 14px;
+  padding: 16px 14px;
+}
+.poster-heading {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+}
+.poster-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+}
+
+.qr-image-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+  width: 210px;
+  height: 210px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+.qr-main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.qr-loading-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+.poster-url-pill {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+.poster-url-pill code {
+  color: #4f46e5;
+  font-weight: 700;
+  font-size: 12px;
+}
+.poster-features-row {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 </style>
