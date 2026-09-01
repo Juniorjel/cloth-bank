@@ -77,7 +77,6 @@
                 ✨ Custom
               </span>
             </div>
-            <code class="role-slug-pill">slug: {{ role.slug }}</code>
           </div>
           <div class="role-actions">
             <button class="btn btn-sm btn-outline-primary" @click="openEditModal(role)">
@@ -159,24 +158,14 @@
 
         <form @submit.prevent="saveRole" class="mt-3">
           <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label font-bold">Role Display Name *</label>
+            <div class="col-12">
+              <label class="form-label font-bold">Role Name *</label>
               <input
                 v-model="form.name"
                 class="form-control"
-                placeholder="e.g. Warehouse Inspector"
+                placeholder="e.g. Warehouse Inspector, Quality Checker, Volunteer"
                 required
               />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label font-bold">Role Slug / Code</label>
-              <input
-                v-model="form.slug"
-                class="form-control font-mono"
-                placeholder="e.g. warehouse-inspector"
-                :disabled="isEditing && form.is_system"
-              />
-              <small class="text-muted">Unique machine identifier for system routing.</small>
             </div>
             <div class="col-12">
               <label class="form-label font-bold">Description</label>
@@ -321,7 +310,6 @@ export default {
       this.form = {
         id: null,
         name: '',
-        slug: '',
         description: '',
         is_system: false,
         permission_ids: [],
@@ -333,7 +321,6 @@ export default {
       this.form = {
         id: role.id,
         name: role.name,
-        slug: role.slug,
         description: role.description || '',
         is_system: role.is_system,
         permission_ids: (role.permissions || []).map(p => p.id),
