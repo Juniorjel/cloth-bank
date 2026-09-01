@@ -594,7 +594,7 @@ export default {
 
       // Clean place name: strip floor/room/flat numbers like 'Floor 3', '3rd Floor', 'Flat 4B'
       const cleanPlace = place
-        .replace(/(?i)\b(\d+(st|nd|rd|th)?\s*floor|floor\s*\d+|room\s*\d+|flat\s*\d+|block\s*[a-z0-9]+)\b/gi, '')
+        .replace(/\b(\d+(st|nd|rd|th)?\s*floor|floor\s*\d+|room\s*\d+|flat\s*\d+|block\s*[a-z0-9]+)\b/gi, '')
         .replace(/\s+/g, ' ')
         .trim()
 
