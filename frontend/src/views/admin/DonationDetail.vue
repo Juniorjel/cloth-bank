@@ -136,9 +136,10 @@
                         <img
                           v-for="img in item.images"
                           :key="img.id"
-                          :src="img.url"
+                          :src="getImageUrl(img.url)"
                           class="item-img-thumb"
-                          @click="lightboxUrl = img.url"
+                          @click="lightboxUrl = getImageUrl(img.url)"
+                          @error="onImageError"
                           title="Click to view full size"
                         />
                       </div>
@@ -371,6 +372,21 @@ export default {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit',
       })
+    },
+    getImageUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+      const apiBase = process.env.VUE_APP_API_URL || 'http://localhost:8000/api'
+      const hostBase = apiBase.replace(/\/api\/?$/, '')
+      const cleanPath = url.startsWith('/') ? url : `/${url}`
+      return `${hostBase}${cleanPath}`
+    },
+    onImageError(e) {
+      // If image not found or blocked, style thumbnail safely
+      e.target.style.opacity = '0.7'
+      e.target.title = 'Image preview not loaded'
     }
   }
 }

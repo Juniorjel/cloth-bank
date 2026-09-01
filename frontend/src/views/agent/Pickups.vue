@@ -105,9 +105,10 @@
                   <img
                     v-for="img in item.images"
                     :key="img.id"
-                    :src="img.url"
+                    :src="getImageUrl(img.url)"
                     class="item-thumb"
-                    @click="lightboxUrl = img.url"
+                    @click="lightboxUrl = getImageUrl(img.url)"
+                    @error="onImageError"
                     :alt="'Item photo'"
                     title="Click to zoom"
                   />
@@ -219,6 +220,20 @@ export default {
     formatDate(d) {
       if (!d) return ''
       return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    },
+    getImageUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url
+      }
+      const apiBase = process.env.VUE_APP_API_URL || 'http://localhost:8000/api'
+      const hostBase = apiBase.replace(/\/api\/?$/, '')
+      const cleanPath = url.startsWith('/') ? url : `/${url}`
+      return `${hostBase}${cleanPath}`
+    },
+    onImageError(e) {
+      e.target.style.opacity = '0.7'
+      e.target.title = 'Photo unavailable'
     }
   }
 }
