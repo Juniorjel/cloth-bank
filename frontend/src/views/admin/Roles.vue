@@ -120,11 +120,11 @@
       >
         <!-- Card Header -->
         <div class="card-head">
-          <div class="d-flex align-items-start gap-3">
+          <div class="card-head-left">
             <div class="role-avatar-icon">
               {{ getRoleIcon(role) }}
             </div>
-            <div>
+            <div class="role-info-wrap">
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h3 class="role-title">{{ role.name }}</h3>
                 <span v-if="role.is_system" class="badge-system-lock" title="Core System Role">
@@ -140,12 +140,13 @@
 
           <!-- Quick Action Buttons -->
           <div class="card-actions-row">
-            <button class="action-circle-btn btn-edit" @click="openEditModal(role)" title="Edit Role & Permissions">
-              ✏️
+            <button class="btn-role-edit" @click="openEditModal(role)" title="Edit Role & Permissions">
+              <span>✏️</span>
+              <span>Edit</span>
             </button>
             <button
               v-if="!role.is_system"
-              class="action-circle-btn btn-delete"
+              class="btn-role-delete"
               :disabled="role.users_count > 0"
               :title="role.users_count > 0 ? 'Cannot delete role with assigned users' : 'Delete Role'"
               @click="confirmDelete(role)"
@@ -934,30 +935,68 @@ export default {
   min-height: 35px;
 }
 
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+.card-head-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.role-info-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
 .card-actions-row {
   display: flex;
-  gap: 6px;
-}
-.action-circle-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-role-edit {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   transition: all 0.15s ease;
 }
-.action-circle-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  transform: scale(1.05);
+.btn-role-edit:hover {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 }
-.btn-edit:hover { border-color: #6366f1; }
-.btn-delete:hover { border-color: #ef4444; background: #fef2f2; }
-.action-circle-btn:disabled {
+.btn-role-delete {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #e11d48;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-role-delete:hover:not(:disabled) {
+  background: #e11d48;
+  color: #ffffff;
+  border-color: #e11d48;
+}
+.btn-role-delete:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
