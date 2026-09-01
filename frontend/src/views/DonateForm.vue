@@ -140,21 +140,90 @@
 
           <!-- Pickup location details -->
           <div v-if="form.collection_type === 'pickup'" class="pickup-details mt-4">
-            <div class="form-group">
-              <label>Street Address / Landmark <span class="req">*</span></label>
+            <!-- Location Category Presets -->
+            <div class="form-group mb-3">
+              <label class="font-bold text-main" style="font-size: 13.5px;">🏢 Pickup Location Type</label>
+              <div class="location-preset-chips mt-2">
+                <button
+                  type="button"
+                  class="location-chip"
+                  :class="{ active: form.location_tag === 'office' }"
+                  @click="form.location_tag = 'office'"
+                >
+                  🏢 Office / Workplace
+                </button>
+                <button
+                  type="button"
+                  class="location-chip"
+                  :class="{ active: form.location_tag === 'home' }"
+                  @click="form.location_tag = 'home'"
+                >
+                  🏠 Home / Residence
+                </button>
+                <button
+                  type="button"
+                  class="location-chip"
+                  :class="{ active: form.location_tag === 'other' }"
+                  @click="form.location_tag = 'other'"
+                >
+                  📍 Other Landmark
+                </button>
+              </div>
+            </div>
+
+            <!-- Place / Building / Office Name -->
+            <div class="form-group mb-3">
+              <label>
+                {{ form.location_tag === 'office' ? 'Office / Company / Building Name' : 'House / Building / Apartment Name' }}
+                <span class="text-muted" style="font-size:12px; font-weight:normal">(Optional)</span>
+              </label>
               <input
-                v-model="form.address"
+                v-model="form.place_name"
                 class="form-control"
-                placeholder="House No, Street, Ward, Landmark..."
+                :placeholder="form.location_tag === 'office' ? 'e.g. Nabil Bank Head Office, 3rd Floor' : 'e.g. Sunrise Apartment, Flat 402'"
+              />
+            </div>
+
+            <!-- Street Address & Search Action -->
+            <div class="form-group mb-3">
+              <label>Street Address / Area / Landmark <span class="req">*</span></label>
+              <div class="input-with-action">
+                <input
+                  v-model="form.address"
+                  class="form-control"
+                  placeholder="e.g. Durbar Marg, Kathmandu or Putalisadak..."
+                  @keyup.enter.prevent="searchAddressOnMap"
+                />
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  :disabled="searchingLocation || !form.address"
+                  @click="searchAddressOnMap"
+                  title="Search this location to pin GPS on map"
+                >
+                  <span v-if="searchingLocation">Searching…</span>
+                  <span v-else>🔍 Find on Map</span>
+                </button>
+              </div>
+              <small class="text-muted">You can enter your office or any address across Nepal, even if you are not currently there.</small>
+            </div>
+
+            <!-- Special Pickup Instructions for Driver -->
+            <div class="form-group mb-3">
+              <label>Special Instructions for Field Driver <span class="text-muted" style="font-size:12px; font-weight:normal">(Optional)</span></label>
+              <input
+                v-model="form.pickup_instructions"
+                class="form-control"
+                placeholder="e.g. Leave package with reception, call on arrival, gate #2..."
               />
             </div>
 
             <div class="map-action-bar">
-              <button type="button" class="btn btn-secondary btn-sm" @click="detectLocation">
-                <span>📍</span> Pin My Current Location
+              <button type="button" class="btn btn-outline-primary btn-sm" @click="detectLocation">
+                <span>📍</span> Use My Current Device GPS
               </button>
               <span v-if="form.latitude" class="location-tag">
-                ✓ GPS: {{ form.latitude.toFixed(4) }}, {{ form.longitude.toFixed(4) }}
+                ✓ GPS Pinned: {{ form.latitude.toFixed(4) }}, {{ form.longitude.toFixed(4) }}
               </span>
             </div>
 
@@ -334,16 +403,20 @@ export default {
       campaigns:  [],
       clothTypes: [],
       form: {
-        campaign_id:     '',
-        donor_name:      '',
-        donor_phone:     '',
-        donor_email:     '',
-        collection_type: 'pickup',
-        latitude:        null,
-        longitude:       null,
-        address:         '',
-        items:           [blankItem()],
+        campaign_id:         '',
+        donor_name:          '',
+        donor_phone:         '',
+        donor_email:         '',
+        collection_type:     'pickup',
+        location_tag:        'office',
+        place_name:          '',
+        pickup_instructions: '',
+        latitude:            null,
+        longitude:           null,
+        address:             '',
+        items:               [blankItem()],
       },
+      searchingLocation: false,
       loading:     false,
       error:       '',
       submitted:   false,
@@ -424,6 +497,52 @@ export default {
       this.form.items[itemIndex].previews.splice(imgIndex, 1)
     },
 
+    async searchAddressOnMap() {
+      const query = [this.form.place_name, this.form.address].filter(Boolean).join(', ')
+      if (!query.trim()) return
+
+      this.searchingLocation = true
+      try {
+        if (window.google && window.google.maps) {
+          const geocoder = new window.google.maps.Geocoder()
+          geocoder.geocode({ address: query + ', Nepal' }, (results, status) => {
+            this.searchingLocation = false
+            if (status === 'OK' && results && results[0]) {
+              const loc = results[0].geometry.location
+              this.form.latitude = loc.lat()
+              this.form.longitude = loc.lng()
+              this.mapVisible = true
+              this.$nextTick(() => this.initMap())
+            } else {
+              this.fallbackNominatimSearch(query)
+            }
+          })
+          return
+        }
+        await this.fallbackNominatimSearch(query)
+      } catch (e) {
+        this.searchingLocation = false
+      }
+    },
+
+    async fallbackNominatimSearch(query) {
+      this.searchingLocation = true
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Nepal')}&limit=1`
+        const res = await fetch(url, { headers: { 'User-Agent': 'ClothBankWeb/1.0' } })
+        const data = await res.json()
+        if (data && data.length > 0) {
+          this.form.latitude = parseFloat(data[0].lat)
+          this.form.longitude = parseFloat(data[0].lon)
+          this.mapVisible = true
+          this.$nextTick(() => this.initMap())
+        }
+      } catch (e) {
+      } finally {
+        this.searchingLocation = false
+      }
+    },
+
     detectLocation() {
       if (!navigator.geolocation) {
         alert('Geolocation is not supported by your browser.')
@@ -480,6 +599,15 @@ export default {
 
       this.loading = true
 
+      let fullAddress = this.form.address ? this.form.address.trim() : ''
+      if (this.form.place_name && this.form.place_name.trim()) {
+        const tagIcon = this.form.location_tag === 'office' ? '🏢 Office' : (this.form.location_tag === 'home' ? '🏠 Home' : '📍 Place')
+        fullAddress = `[${tagIcon}: ${this.form.place_name.trim()}] ${fullAddress}`
+      }
+      if (this.form.pickup_instructions && this.form.pickup_instructions.trim()) {
+        fullAddress = `${fullAddress} (Note: ${this.form.pickup_instructions.trim()})`
+      }
+
       const formData = new FormData()
       formData.append('campaign_id',     this.form.campaign_id)
       formData.append('donor_name',      this.form.donor_name)
@@ -488,7 +616,7 @@ export default {
       formData.append('collection_type', this.form.collection_type)
       if (this.form.latitude)  formData.append('latitude',  this.form.latitude)
       if (this.form.longitude) formData.append('longitude', this.form.longitude)
-      if (this.form.address)   formData.append('address',   this.form.address)
+      if (fullAddress)         formData.append('address',   fullAddress)
 
       this.form.items.forEach((item, i) => {
         formData.append(`items[${i}][cloth_type_id]`, item.cloth_type_id)
@@ -1048,5 +1176,56 @@ export default {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
+}
+
+/* ── Location Preset Chips & Actions ── */
+.location-preset-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.location-chip {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.location-chip:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+.location-chip.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
+}
+
+.input-with-action {
+  display: flex;
+  gap: 8px;
+}
+.input-with-action input {
+  flex: 1;
+}
+
+.btn-outline-primary {
+  background: #ffffff;
+  border: 1.5px solid #2563eb;
+  color: #2563eb;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-outline-primary:hover {
+  background: #2563eb;
+  color: #ffffff;
 }
 </style>
