@@ -6,7 +6,6 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\Role;
-use App\Models\Permission;
 use App\Models\Campaign;
 use App\Models\ClothType;
 use App\Models\Donation;
@@ -17,132 +16,27 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
-        // 1. Seed Granular Permissions
-        $permissionData = [
-            // Dashboard
-            ['slug' => 'dashboard.view', 'name' => 'View Executive Dashboard', 'module' => 'Dashboard', 'description' => 'Access real-time KPI metrics, charts, and summary reports'],
-            ['slug' => 'reports.view', 'name' => 'View & Export Reports', 'module' => 'Dashboard', 'description' => 'Export donation velocity and breakdown reports'],
+        // 1. Seed Roles & Permissions
+        $this->call(PermissionSeeder::class);
 
-            // Donations
-            ['slug' => 'donations.view', 'name' => 'View Donations List', 'module' => 'Donations', 'description' => 'Browse all incoming clothing donation submissions'],
-            ['slug' => 'donations.create', 'name' => 'Create / Submit Donation', 'module' => 'Donations', 'description' => 'Submit donation forms for donors or walk-in gifts'],
-            ['slug' => 'donations.assign_driver', 'name' => 'Dispatch Drivers', 'module' => 'Donations', 'description' => 'Assign field logistics drivers to doorstep pickups'],
-            ['slug' => 'donations.verify', 'name' => 'Verify Warehouse Intake', 'module' => 'Donations', 'description' => 'Inspect pieces, verify quantities, and issue certificates'],
-            ['slug' => 'donations.update_status', 'name' => 'Update Lifecycle Status', 'module' => 'Donations', 'description' => 'Transition donation stages (Picked Up, Delivered, etc.)'],
+        $adminRole = Role::where('slug', 'admin')->first();
+        $agentRole = Role::where('slug', 'agent')->first();
 
-            // Campaigns
-            ['slug' => 'campaigns.view', 'name' => 'View Campaign Drives', 'module' => 'Campaigns', 'description' => 'View active and upcoming charity clothing campaigns'],
-            ['slug' => 'campaigns.create', 'name' => 'Create Campaigns', 'module' => 'Campaigns', 'description' => 'Launch new clothing drive campaigns'],
-            ['slug' => 'campaigns.edit', 'name' => 'Edit Campaigns', 'module' => 'Campaigns', 'description' => 'Update campaign details, targets, and dates'],
-            ['slug' => 'campaigns.delete', 'name' => 'Delete Campaigns', 'module' => 'Campaigns', 'description' => 'Remove or cancel clothing campaigns'],
-
-            // Clothing Types
-            ['slug' => 'cloth_types.manage', 'name' => 'Manage Clothing Categories', 'module' => 'Cloth Categories', 'description' => 'Create, edit, toggle, and delete cloth categories'],
-
-            // Staff & Users
-            ['slug' => 'users.view', 'name' => 'View Staff & Users', 'module' => 'Users & Staff', 'description' => 'Access user list and profile details'],
-            ['slug' => 'users.create', 'name' => 'Create Staff Accounts', 'module' => 'Users & Staff', 'description' => 'Add new administrators, agents, or staff members'],
-            ['slug' => 'users.edit', 'name' => 'Edit Staff & Passwords', 'module' => 'Users & Staff', 'description' => 'Update staff profiles, roles, and status'],
-            ['slug' => 'users.delete', 'name' => 'Delete Staff Accounts', 'module' => 'Users & Staff', 'description' => 'Remove staff accounts from system'],
-
-            // Roles & Permissions
-            ['slug' => 'roles.manage', 'name' => 'Manage Roles & Permissions', 'module' => 'Roles & RBAC', 'description' => 'Create custom roles and configure fine-grained permissions'],
-        ];
-
-        $permissions = [];
-        foreach ($permissionData as $perm) {
-            $permissions[$perm['slug']] = Permission::updateOrCreate(
-                ['slug' => $perm['slug']],
-                $perm
-            );
-        }
-
-        // 2. Seed Roles
-        $adminRole = Role::updateOrCreate(
-            ['slug' => 'admin'],
-            [
-                'name'        => 'Super Admin',
-                'description' => 'Full unrestricted access to all modules, management, dispatching, and system settings.',
-                'is_system'   => true,
-            ]
-        );
-        $adminRole->syncPermissions(collect($permissions)->pluck('id')->toArray());
-
-        $agentRole = Role::updateOrCreate(
-            ['slug' => 'agent'],
-            [
-                'name'        => 'Logistics Field Agent',
-                'description' => 'Field driver assigned to pick up donated clothes, navigate GPS routes, and deliver to warehouse.',
-                'is_system'   => true,
-            ]
-        );
-        $agentRole->syncPermissions([
-            $permissions['dashboard.view']->id,
-            $permissions['donations.view']->id,
-            $permissions['donations.update_status']->id,
-        ]);
-
-        $userRole = Role::updateOrCreate(
-            ['slug' => 'user'],
-            [
-                'name'        => 'Donor / Normal User',
-                'description' => 'Community donor who browses drives, submits clothes donations, and tracks pickup status.',
-                'is_system'   => true,
-            ]
-        );
-        $userRole->syncPermissions([
-            $permissions['campaigns.view']->id,
-            $permissions['donations.create']->id,
-            $permissions['donations.view']->id,
-        ]);
-
-        $managerRole = Role::updateOrCreate(
-            ['slug' => 'warehouse-manager'],
-            [
-                'name'        => 'Warehouse Intake Manager',
-                'description' => 'Oversees sorting, piece verification, quality checking, and category management at the central hub.',
-                'is_system'   => false,
-            ]
-        );
-        $managerRole->syncPermissions([
-            $permissions['dashboard.view']->id,
-            $permissions['donations.view']->id,
-            $permissions['donations.verify']->id,
-            $permissions['donations.assign_driver']->id,
-            $permissions['cloth_types.manage']->id,
-            $permissions['campaigns.view']->id,
-        ]);
-
-        $coordRole = Role::updateOrCreate(
-            ['slug' => 'campaign-coordinator'],
-            [
-                'name'        => 'Campaign Coordinator',
-                'description' => 'Creates and promotes clothing drives, sets collection goals, and monitors campaign progress.',
-                'is_system'   => false,
-            ]
-        );
-        $coordRole->syncPermissions([
-            $permissions['dashboard.view']->id,
-            $permissions['campaigns.view']->id,
-            $permissions['campaigns.create']->id,
-            $permissions['campaigns.edit']->id,
-            $permissions['donations.view']->id,
-            $permissions['reports.view']->id,
-        ]);
-
-        // 3. Seed Users and assign roles
+        // 2. Seed Users with assigned roles
         $admin = User::updateOrCreate(
             ['email' => 'admin@clothbank.com'],
             [
                 'name'      => 'Super Admin',
                 'password'  => Hash::make('password'),
                 'role'      => 'admin',
-                'role_id'   => $adminRole->id,
+                'role_id'   => $adminRole ? $adminRole->id : null,
                 'phone'     => '9801000001',
                 'is_active' => true,
             ]
         );
-        $admin->roles()->syncWithoutDetaching([$adminRole->id]);
+        if ($adminRole) {
+            $admin->roles()->syncWithoutDetaching([$adminRole->id]);
+        }
 
         $agent1 = User::updateOrCreate(
             ['email' => 'agent@clothbank.com'],
@@ -150,12 +44,14 @@ class DatabaseSeeder extends Seeder
                 'name'      => 'Ram Shrestha',
                 'password'  => Hash::make('password'),
                 'role'      => 'agent',
-                'role_id'   => $agentRole->id,
+                'role_id'   => $agentRole ? $agentRole->id : null,
                 'phone'     => '9841234567',
                 'is_active' => true,
             ]
         );
-        $agent1->roles()->syncWithoutDetaching([$agentRole->id]);
+        if ($agentRole) {
+            $agent1->roles()->syncWithoutDetaching([$agentRole->id]);
+        }
 
         $agent2 = User::updateOrCreate(
             ['email' => 'driver@clothbank.com'],
@@ -163,14 +59,16 @@ class DatabaseSeeder extends Seeder
                 'name'      => 'Sita Thapa',
                 'password'  => Hash::make('password'),
                 'role'      => 'agent',
-                'role_id'   => $agentRole->id,
+                'role_id'   => $agentRole ? $agentRole->id : null,
                 'phone'     => '9812345678',
                 'is_active' => true,
             ]
         );
-        $agent2->roles()->syncWithoutDetaching([$agentRole->id]);
+        if ($agentRole) {
+            $agent2->roles()->syncWithoutDetaching([$agentRole->id]);
+        }
 
-        // 4. Campaigns
+        // 3. Campaigns
         $camp1 = Campaign::updateOrCreate(
             ['title' => 'Winter Clothes Drive 2024'],
             [
@@ -201,7 +99,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 5. Cloth Types
+        // 4. Cloth Types
         $typesData = [
             ['name' => 'Jackets & Coats', 'is_active' => true],
             ['name' => 'Shirts & T-Shirts', 'is_active' => true],
@@ -216,7 +114,7 @@ class DatabaseSeeder extends Seeder
             $clothTypes[] = ClothType::updateOrCreate(['name' => $t['name']], $t);
         }
 
-        // 6. Donations & Donation Items
+        // 5. Donations & Donation Items
         $donationsData = [
             [
                 'donor_name'        => 'Rajib Kumar Bhujel',
@@ -229,8 +127,8 @@ class DatabaseSeeder extends Seeder
                 'agent_id'          => $agent1->id,
                 'verified_quantity' => null,
                 'items' => [
-                    ['cloth_type_id' => $clothTypes[0]->id, 'quantity' => 3, 'condition' => 'good'],
-                    ['cloth_type_id' => $clothTypes[3]->id, 'quantity' => 2, 'condition' => 'gently_used'],
+                    ['cloth_type_id' => $clothTypes[0]->id, 'quantity' => 3],
+                    ['cloth_type_id' => $clothTypes[3]->id, 'quantity' => 2],
                 ]
             ],
             [
@@ -244,8 +142,8 @@ class DatabaseSeeder extends Seeder
                 'agent_id'          => $agent1->id,
                 'verified_quantity' => 8,
                 'items' => [
-                    ['cloth_type_id' => $clothTypes[1]->id, 'quantity' => 5, 'condition' => 'good'],
-                    ['cloth_type_id' => $clothTypes[2]->id, 'quantity' => 3, 'condition' => 'good'],
+                    ['cloth_type_id' => $clothTypes[1]->id, 'quantity' => 5],
+                    ['cloth_type_id' => $clothTypes[2]->id, 'quantity' => 3],
                 ]
             ],
             [
@@ -259,7 +157,7 @@ class DatabaseSeeder extends Seeder
                 'agent_id'          => $agent2->id,
                 'verified_quantity' => null,
                 'items' => [
-                    ['cloth_type_id' => $clothTypes[4]->id, 'quantity' => 6, 'condition' => 'good'],
+                    ['cloth_type_id' => $clothTypes[4]->id, 'quantity' => 6],
                 ]
             ],
             [
@@ -273,7 +171,7 @@ class DatabaseSeeder extends Seeder
                 'agent_id'          => $agent1->id,
                 'verified_quantity' => null,
                 'items' => [
-                    ['cloth_type_id' => $clothTypes[0]->id, 'quantity' => 4, 'condition' => 'good'],
+                    ['cloth_type_id' => $clothTypes[0]->id, 'quantity' => 4],
                 ]
             ],
             [
@@ -287,8 +185,8 @@ class DatabaseSeeder extends Seeder
                 'agent_id'          => $agent2->id,
                 'verified_quantity' => null,
                 'items' => [
-                    ['cloth_type_id' => $clothTypes[1]->id, 'quantity' => 4, 'condition' => 'good'],
-                    ['cloth_type_id' => $clothTypes[4]->id, 'quantity' => 3, 'condition' => 'gently_used'],
+                    ['cloth_type_id' => $clothTypes[1]->id, 'quantity' => 4],
+                    ['cloth_type_id' => $clothTypes[4]->id, 'quantity' => 3],
                 ]
             ],
             [
@@ -302,8 +200,8 @@ class DatabaseSeeder extends Seeder
                 'agent_id'          => null,
                 'verified_quantity' => null,
                 'items' => [
-                    ['cloth_type_id' => $clothTypes[5]->id, 'quantity' => 2, 'condition' => 'good'],
-                    ['cloth_type_id' => $clothTypes[3]->id, 'quantity' => 4, 'condition' => 'good'],
+                    ['cloth_type_id' => $clothTypes[5]->id, 'quantity' => 2],
+                    ['cloth_type_id' => $clothTypes[3]->id, 'quantity' => 4],
                 ]
             ],
         ];
@@ -317,7 +215,6 @@ class DatabaseSeeder extends Seeder
                 $d
             );
 
-            // Seed donation items
             foreach ($items as $item) {
                 DonationItem::firstOrCreate(
                     [
