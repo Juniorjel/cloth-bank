@@ -17,6 +17,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'role',
+        'role_id',
         'is_active',
     ];
 
@@ -30,43 +31,117 @@ class User extends Authenticatable
         'is_active'         => 'boolean',
     ];
 
-    protected $appends = ['permissions'];
+    protected $appends = ['permissions', 'role_name'];
 
-    public function isAdmin()
+    // Relationships
+    public function primaryRole()
     {
-        return $this->role === 'admin';
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
-    public function isAgent()
+    public function roles()
     {
-        return $this->role === 'agent';
+        return $this->belongsToMany(Role::class, 'role_user');
     }
 
-    public function isUser()
+    // Role checks
+    public function hasRole($roleSlug): bool
     {
-        return $this->role === 'user' || (!$this->isAdmin() && !$this->isAgent());
+        if ($this->role === $roleSlug) {
+            return true;
+        }
+
+        if ($this->primaryRole && $this->primaryRole->slug === $roleSlug) {
+            return true;
+        }
+
+        return $this->roles->contains('slug', $roleSlug);
     }
 
-    public function getPermissionsAttribute()
+    public function isAdmin(): bool
     {
+        return $this->hasRole('admin') || $this->hasRole('super-admin');
+    }
+
+    public function isAgent(): bool
+    {
+        return $this->hasRole('agent') || $this->hasRole('logistics-agent') || $this->hasRole('driver');
+    }
+
+    public function isUser(): bool
+    {
+        return !$this->isAdmin() && !$this->isAgent();
+    }
+
+    public function getRoleNameAttribute(): string
+    {
+        if ($this->primaryRole) {
+            return $this->primaryRole->name;
+        }
+
+        $firstRole = $this->roles->first();
+        if ($firstRole) {
+            return $firstRole->name;
+        }
+
+        return ucfirst($this->role ?? 'User');
+    }
+
+    // Dynamic Permissions attribute
+    public function getPermissionsAttribute(): array
+    {
+        // 1. Fetch permissions from assigned roles
+        $dbPermissions = collect();
+
+        if ($this->primaryRole && $this->primaryRole->relationLoaded('permissions')) {
+            $dbPermissions = $dbPermissions->merge($this->primaryRole->permissions->pluck('slug'));
+        } elseif ($this->primaryRole) {
+            $dbPermissions = $dbPermissions->merge($this->primaryRole->permissions()->pluck('slug'));
+        }
+
+        if ($this->relationLoaded('roles')) {
+            foreach ($this->roles as $role) {
+                if ($role->relationLoaded('permissions')) {
+                    $dbPermissions = $dbPermissions->merge($role->permissions->pluck('slug'));
+                } else {
+                    $dbPermissions = $dbPermissions->merge($role->permissions()->pluck('slug'));
+                }
+            }
+        }
+
+        if ($dbPermissions->isNotEmpty()) {
+            return $dbPermissions->unique()->values()->toArray();
+        }
+
+        // 2. Fallback to default matrix based on legacy role string
         if ($this->isAdmin()) {
             return [
                 'manage_all',
-                'view_dashboard',
-                'manage_campaigns',
-                'manage_cloth_types',
-                'manage_donations',
-                'assign_driver',
-                'verify_intake',
-                'manage_users',
-                'generate_qr',
-                'create_donation',
-                'view_my_donations',
+                'dashboard.view',
+                'donations.view',
+                'donations.create',
+                'donations.verify',
+                'donations.assign_driver',
+                'donations.update_status',
+                'campaigns.view',
+                'campaigns.create',
+                'campaigns.edit',
+                'campaigns.delete',
+                'cloth_types.manage',
+                'users.view',
+                'users.create',
+                'users.edit',
+                'users.delete',
+                'roles.manage',
+                'reports.view',
             ];
         }
 
         if ($this->isAgent()) {
             return [
+                'dashboard.view',
+                'donations.view',
+                'donations.update_status',
                 'view_assigned_tasks',
                 'mark_picked_up',
                 'mark_delivered',
@@ -74,16 +149,39 @@ class User extends Authenticatable
         }
 
         return [
-            'view_campaigns',
-            'create_donation',
-            'view_my_donations',
+            'campaigns.view',
+            'donations.create',
+            'donations.view',
             'track_donation',
         ];
     }
 
-    public function hasPermission($permission)
+    public function hasPermission($permission): bool
     {
-        return in_array($permission, $this->permissions) || in_array('manage_all', $this->permissions);
+        $perms = $this->permissions;
+        return in_array($permission, $perms) || in_array('manage_all', $perms);
+    }
+
+    public function assignRole($role)
+    {
+        if (is_numeric($role)) {
+            $this->role_id = $role;
+            $this->save();
+            $this->roles()->syncWithoutDetaching([$role]);
+        } elseif (is_string($role)) {
+            $roleModel = Role::where('slug', $role)->first();
+            if ($roleModel) {
+                $this->role_id = $roleModel->id;
+                $this->role = $roleModel->slug;
+                $this->save();
+                $this->roles()->syncWithoutDetaching([$roleModel->id]);
+            }
+        } elseif ($role instanceof Role) {
+            $this->role_id = $role->id;
+            $this->role = $role->slug;
+            $this->save();
+            $this->roles()->syncWithoutDetaching([$role->id]);
+        }
     }
 
     // Driver pickups

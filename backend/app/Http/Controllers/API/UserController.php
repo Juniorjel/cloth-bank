@@ -44,7 +44,10 @@ class UserController extends Controller
             'email'     => 'required|email|unique:users,email',
             'phone'     => 'nullable|string|max:20',
             'password'  => 'required|string|min:6',
-            'role'      => 'required|in:admin,agent',
+            'role'      => 'nullable|string|max:50',
+            'role_id'   => 'nullable|exists:roles,id',
+            'role_ids'  => 'nullable|array',
+            'role_ids.*'=> 'exists:roles,id',
             'is_active' => 'boolean',
         ]);
 
@@ -60,7 +63,10 @@ class UserController extends Controller
             'email'     => 'sometimes|email|unique:users,email,' . $id,
             'phone'     => 'nullable|string|max:20',
             'password'  => 'nullable|string|min:6',
-            'role'      => 'sometimes|in:admin,agent',
+            'role'      => 'nullable|string|max:50',
+            'role_id'   => 'nullable|exists:roles,id',
+            'role_ids'  => 'nullable|array',
+            'role_ids.*'=> 'exists:roles,id',
             'is_active' => 'boolean',
         ]);
 
