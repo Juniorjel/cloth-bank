@@ -270,7 +270,9 @@ export default {
 <style scoped>
 .saas-admin-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   background-color: var(--bg-app);
   position: relative;
 }
@@ -283,10 +285,10 @@ export default {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  position: sticky;
-  top: 0;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   z-index: 100;
 }
 .saas-sidebar.sidebar-collapsed {
@@ -506,9 +508,23 @@ export default {
 /* ─── Main Workspace & Topbar ─── */
 .saas-main-wrapper {
   flex: 1;
+  height: 100vh;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.saas-main-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+.saas-main-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 .saas-topbar {
@@ -521,6 +537,7 @@ export default {
   padding: 0 20px;
   position: sticky;
   top: 0;
+  flex-shrink: 0;
   z-index: 40;
 }
 
