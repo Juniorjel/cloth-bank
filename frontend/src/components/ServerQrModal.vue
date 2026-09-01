@@ -11,25 +11,25 @@
 
       <!-- Server Host / IP Configuration -->
       <div class="server-config-card my-3">
-        <label class="font-bold text-main mb-1 d-block" style="font-size:12px">Server API Endpoint URL</label>
+        <label class="font-bold text-main mb-1 d-block" style="font-size:12px">Server API Endpoint URL (VUE_APP_API_URL)</label>
         <div class="d-flex gap-2">
           <input
             v-model="serverUrl"
             class="form-control font-bold"
-            placeholder="http://192.168.1.68:8000/api"
+            :placeholder="defaultApiUrl"
             @input="generateQr"
           />
-          <button class="btn btn-secondary btn-sm" @click="resetToLocalIp" title="Auto-detect Host">
-            Wi-Fi IP
+          <button class="btn btn-secondary btn-sm" @click="resetToConfiguredApi" title="Reset to VUE_APP_API_URL">
+            Reset to .env API
           </button>
         </div>
-        <div class="d-flex gap-2 mt-2 flex-wrap">
-          <button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:11.5px" @click="setPreset('http://192.168.1.68:8000/api')">
-            ⚡ Active Wi-Fi Hub (192.168.1.68:8000)
+        <div class="d-flex gap-2 mt-2 flex-wrap" v-if="defaultApiUrl">
+          <button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:11.5px" @click="setPreset(defaultApiUrl)">
+            🌐 Use VUE_APP_API_URL: {{ defaultApiUrl }}
           </button>
         </div>
         <small class="text-muted d-block mt-1">
-          💡 For mobile devices on Wi-Fi, scan the <b>Active Wi-Fi Hub</b> QR code so your phone can reach the local Laravel backend.
+          💡 Configured in <code>.env</code> as <code>VUE_APP_API_URL</code>.
         </small>
       </div>
 
@@ -97,21 +97,23 @@ import QRCode from 'qrcode'
 export default {
   name: 'ServerQrModal',
   data() {
+    const envUrl = process.env.VUE_APP_API_URL || 'http://192.168.1.68:8000/api'
     return {
-      serverUrl: 'http://192.168.1.68:8000/api',
+      defaultApiUrl: envUrl,
+      serverUrl: envUrl,
       qrDataUrl: '',
     }
   },
   mounted() {
-    this.resetToLocalIp()
+    this.resetToConfiguredApi()
   },
   methods: {
     setPreset(url) {
       this.serverUrl = url
       this.generateQr()
     },
-    resetToLocalIp() {
-      this.serverUrl = 'http://192.168.1.68:8000/api'
+    resetToConfiguredApi() {
+      this.serverUrl = this.defaultApiUrl || process.env.VUE_APP_API_URL || 'http://192.168.1.68:8000/api'
       this.generateQr()
     },
     async generateQr() {
