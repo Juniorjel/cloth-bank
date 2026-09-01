@@ -20,11 +20,16 @@
             @input="generateQr"
           />
           <button class="btn btn-secondary btn-sm" @click="resetToLocalIp" title="Auto-detect Host">
-            Auto Detect
+            Wi-Fi IP
+          </button>
+        </div>
+        <div class="d-flex gap-2 mt-2 flex-wrap">
+          <button class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:11.5px" @click="setPreset('http://192.168.1.68:8000/api')">
+            ⚡ Active Wi-Fi Hub (192.168.1.68:8000)
           </button>
         </div>
         <small class="text-muted d-block mt-1">
-          💡 For mobile devices on Wi-Fi, ensure your phone is connected to the same Wi-Fi network.
+          💡 For mobile devices on Wi-Fi, scan the <b>Active Wi-Fi Hub</b> QR code so your phone can reach the local Laravel backend.
         </small>
       </div>
 
@@ -101,13 +106,12 @@ export default {
     this.resetToLocalIp()
   },
   methods: {
+    setPreset(url) {
+      this.serverUrl = url
+      this.generateQr()
+    },
     resetToLocalIp() {
-      const hostname = window.location.hostname
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        this.serverUrl = 'http://192.168.1.68:8000/api'
-      } else {
-        this.serverUrl = `http://${hostname}:8000/api`
-      }
+      this.serverUrl = 'http://192.168.1.68:8000/api'
       this.generateQr()
     },
     async generateQr() {
