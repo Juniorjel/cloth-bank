@@ -449,6 +449,24 @@ export default {
     }
   },
 
+  watch: {
+    'form.collection_type'(newVal) {
+      if (newVal === 'pickup') {
+        this.$nextTick(() => {
+          this.initLeafletMap()
+        })
+      }
+    }
+  },
+
+  mounted() {
+    if (this.form.collection_type === 'pickup') {
+      this.$nextTick(() => {
+        this.initLeafletMap()
+      })
+    }
+  },
+
   methods: {
     addItem() {
       if (this.form.items.length >= 10) return
@@ -497,49 +515,155 @@ export default {
       this.form.items[itemIndex].previews.splice(imgIndex, 1)
     },
 
-    async searchAddressOnMap() {
-      const query = [this.form.place_name, this.form.address].filter(Boolean).join(', ')
-      if (!query.trim()) return
+    initLeafletMap(lat, lng) {
+      if (typeof window.L === 'undefined') {
+        setTimeout(() => this.initLeafletMap(lat, lng), 300)
+        return
+      }
 
-      this.searchingLocation = true
+      const initialLat = lat || this.form.latitude || 27.7172
+      const initialLng = lng || this.form.longitude || 85.3240
+
+      const container = document.getElementById('map')
+      if (!container) return
+
+      if (this.map) {
+        this.map.remove()
+        this.map = null
+      }
+
+      this.mapVisible = true
+
       try {
-        if (window.google && window.google.maps) {
-          const geocoder = new window.google.maps.Geocoder()
-          geocoder.geocode({ address: query + ', Nepal' }, (results, status) => {
-            this.searchingLocation = false
-            if (status === 'OK' && results && results[0]) {
-              const loc = results[0].geometry.location
-              this.form.latitude = loc.lat()
-              this.form.longitude = loc.lng()
-              this.mapVisible = true
-              this.$nextTick(() => this.initMap())
-            } else {
-              this.fallbackNominatimSearch(query)
-            }
-          })
-          return
-        }
-        await this.fallbackNominatimSearch(query)
-      } catch (e) {
-        this.searchingLocation = false
+        this.map = window.L.map('map').setView([initialLat, initialLng], 14)
+
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(this.map)
+
+        this.marker = window.L.marker([initialLat, initialLng], { draggable: true }).addTo(this.map)
+        this.marker.bindPopup('📍 <b>Pickup Location</b><br>Drag pin to your exact building entrance.').openPopup()
+
+        this.marker.on('dragend', (e) => {
+          const pos = e.target.getLatLng()
+          this.form.latitude = pos.lat
+          this.form.longitude = pos.lng
+          this.reverseGeocode(pos.lat, pos.lng)
+        })
+
+        this.map.on('click', (e) => {
+          const { lat: clickLat, lng: clickLng } = e.latlng
+          this.form.latitude = clickLat
+          this.form.longitude = clickLng
+          this.marker.setLatLng([clickLat, clickLng])
+          this.marker.bindPopup('📍 <b>Selected Pickup Point</b>').openPopup()
+          this.reverseGeocode(clickLat, clickLng)
+        })
+
+        setTimeout(() => {
+          if (this.map) this.map.invalidateSize()
+        }, 250)
+      } catch (err) {
+        console.error('Leaflet init error:', err)
       }
     },
 
-    async fallbackNominatimSearch(query) {
-      this.searchingLocation = true
+    async reverseGeocode(lat, lng) {
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Nepal')}&limit=1`
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
         const res = await fetch(url, { headers: { 'User-Agent': 'ClothBankWeb/1.0' } })
         const data = await res.json()
-        if (data && data.length > 0) {
-          this.form.latitude = parseFloat(data[0].lat)
-          this.form.longitude = parseFloat(data[0].lon)
-          this.mapVisible = true
-          this.$nextTick(() => this.initMap())
+        if (data && data.display_name && !this.form.address) {
+          this.form.address = data.display_name
         }
       } catch (e) {
-      } finally {
-        this.searchingLocation = false
+      }
+    },
+
+    async searchAddressOnMap() {
+      const place = (this.form.place_name || '').trim()
+      const address = (this.form.address || '').trim()
+
+      if (!place && !address) {
+        alert('Please enter an office name, landmark, or street address.')
+        return
+      }
+
+      this.searchingLocation = true
+
+      // Clean place name: strip floor/room/flat numbers like 'Floor 3', '3rd Floor', 'Flat 4B'
+      const cleanPlace = place
+        .replace(/(?i)\b(\d+(st|nd|rd|th)?\s*floor|floor\s*\d+|room\s*\d+|flat\s*\d+|block\s*[a-z0-9]+)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+
+      const queriesToTry = []
+      if (cleanPlace && address) queriesToTry.push(`${cleanPlace}, ${address}`)
+      if (cleanPlace) queriesToTry.push(cleanPlace)
+      if (address && address !== cleanPlace) queriesToTry.push(address)
+
+      // Split address tokens (e.g. "Durbar Marg", "Kathmandu")
+      const tokens = address.split(/[,;]/).map(t => t.trim()).filter(Boolean)
+      tokens.forEach(t => {
+        if (!queriesToTry.includes(t)) queriesToTry.push(t)
+      })
+
+      let foundLat = null
+      let foundLng = null
+      let matchedName = ''
+
+      for (const q of queriesToTry) {
+        if (foundLat !== null) break
+
+        // Tier 1: Photon Fuzzy POI API (Best for offices, banks, hospitals, malls in Nepal)
+        try {
+          const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q + ' Nepal')}&lat=27.7172&lon=85.3240&limit=1`
+          const pRes = await fetch(photonUrl)
+          const pData = await pRes.json()
+          if (pData && pData.features && pData.features.length > 0) {
+            const geom = pData.features[0].geometry
+            if (geom && geom.coordinates && geom.coordinates.length >= 2) {
+              foundLng = geom.coordinates[0]
+              foundLat = geom.coordinates[1]
+              matchedName = (pData.features[0].properties && pData.features[0].properties.name) || q
+              break
+            }
+          }
+        } catch (e) {}
+
+        if (foundLat !== null) break
+
+        // Tier 2: OpenStreetMap Nominatim
+        try {
+          const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Nepal')}&limit=1`
+          const nRes = await fetch(nomUrl, { headers: { 'User-Agent': 'ClothBankWeb/2.0' } })
+          const nData = await nRes.json()
+          if (nData && nData.length > 0) {
+            foundLat = parseFloat(nData[0].lat)
+            foundLng = parseFloat(nData[0].lon)
+            matchedName = nData[0].display_name || q
+            break
+          }
+        } catch (e) {}
+      }
+
+      this.searchingLocation = false
+
+      if (foundLat !== null && foundLng !== null) {
+        this.form.latitude = foundLat
+        this.form.longitude = foundLng
+        this.mapVisible = true
+
+        if (this.map && this.marker) {
+          this.map.setView([foundLat, foundLng], 16)
+          this.marker.setLatLng([foundLat, foundLng])
+          this.marker.bindPopup(`📍 <b>${matchedName}</b><br>GPS Pinned!`).openPopup()
+        } else {
+          this.initLeafletMap(foundLat, foundLng)
+        }
+      } else {
+        alert('Could not pin exact GPS for this name. Please add a nearby area or street name (e.g. Durbar Marg, Baneshwor, Thamel).')
       }
     },
 
@@ -553,27 +677,17 @@ export default {
           this.form.latitude  = pos.coords.latitude
           this.form.longitude = pos.coords.longitude
           this.mapVisible = true
-          this.$nextTick(() => this.initMap())
+          if (this.map && this.marker) {
+            this.map.setView([pos.coords.latitude, pos.coords.longitude], 16)
+            this.marker.setLatLng([pos.coords.latitude, pos.coords.longitude])
+            this.marker.bindPopup('📍 <b>Your Current Location</b>').openPopup()
+          } else {
+            this.initLeafletMap(pos.coords.latitude, pos.coords.longitude)
+          }
+          this.reverseGeocode(pos.coords.latitude, pos.coords.longitude)
         },
         () => alert('Unable to retrieve your location. Please check browser permissions.')
       )
-    },
-
-    initMap() {
-      if (!window.google || !window.google.maps) return
-      const latLng = { lat: this.form.latitude, lng: this.form.longitude }
-      this.map = new window.google.maps.Map(document.getElementById('map'), {
-        zoom: 15, center: latLng,
-        disableDefaultUI: false,
-      })
-      this.marker = new window.google.maps.Marker({
-        map: this.map, position: latLng, draggable: true,
-        title: 'Drag to adjust pickup location',
-      })
-      this.marker.addListener('dragend', e => {
-        this.form.latitude  = e.latLng.lat()
-        this.form.longitude = e.latLng.lng()
-      })
     },
 
     async submitDonation() {
@@ -1227,5 +1341,18 @@ export default {
 .btn-outline-primary:hover {
   background: #2563eb;
   color: #ffffff;
+}
+
+/* ── Interactive Leaflet Map Container ── */
+.map-container {
+  height: 320px;
+  width: 100%;
+  border-radius: 14px;
+  margin-top: 14px;
+  border: 2px solid #cbd5e1;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
 }
 </style>
