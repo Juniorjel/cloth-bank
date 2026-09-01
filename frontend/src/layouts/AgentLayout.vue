@@ -5,7 +5,7 @@
         <img src="/logo.svg" alt="Cloth Bank Logo" class="brand-logo-wrap" />
         <div>
           <span class="brand-name">Cloth Bank</span>
-          <span class="brand-role-badge">Field Logistics</span>
+          <span class="brand-role-badge">कपडा बैंक • Field Logistics</span>
         </div>
       </div>
 

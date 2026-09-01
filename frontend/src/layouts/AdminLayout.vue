@@ -20,8 +20,8 @@
         <router-link to="/admin/dashboard" class="brand-badge-box">
           <img src="/logo.svg" alt="Cloth Bank Logo" class="brand-logo-img" />
           <div class="brand-info" v-if="!desktopSidebarCollapsed || mobileSidebarOpen">
-            <span class="brand-name">ClothBank</span>
-            <span class="brand-plan">SaaS Pro</span>
+            <span class="brand-name">Cloth Bank</span>
+            <span class="brand-plan">कपडा बैंक • Admin</span>
           </div>
         </router-link>
         

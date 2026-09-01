@@ -11,7 +11,7 @@
       </div>
 
       <div class="login-header">
-        <h1>Cloth Bank</h1>
+        <h1>Cloth Bank <span style="font-size: 1.1rem; color: #2563EB; font-weight: 700;">(कपडा बैंक)</span></h1>
         <p>Campaign & Logistics Management System</p>
       </div>
 

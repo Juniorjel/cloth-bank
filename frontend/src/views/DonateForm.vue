@@ -6,7 +6,7 @@
         <div class="brand">
           <img src="/logo.svg" alt="Cloth Bank Logo" class="brand-logo-img" />
           <span class="brand-title">Cloth Bank</span>
-          <span class="brand-tag">Community Aid</span>
+          <span class="brand-tag">कपडा बैंक</span>
         </div>
         <router-link to="/login" class="btn btn-secondary btn-sm">
           <span>🔐</span> Staff Portal
