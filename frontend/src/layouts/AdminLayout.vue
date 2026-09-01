@@ -18,7 +18,7 @@
       <!-- Organization / Brand Head -->
       <div class="sidebar-brand-header">
         <router-link to="/admin/dashboard" class="brand-badge-box">
-          <span class="brand-icon">🧺</span>
+          <img src="/logo.svg" alt="Cloth Bank Logo" class="brand-logo-img" />
           <div class="brand-info" v-if="!desktopSidebarCollapsed || mobileSidebarOpen">
             <span class="brand-name">ClothBank</span>
             <span class="brand-plan">SaaS Pro</span>
@@ -339,6 +339,12 @@ export default {
   align-items: center;
   gap: 10px;
   text-decoration: none;
+}
+.brand-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
 }
 .brand-icon {
   font-size: 18px;

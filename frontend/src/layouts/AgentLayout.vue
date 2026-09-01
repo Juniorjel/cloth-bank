@@ -2,9 +2,7 @@
   <div class="agent-layout">
     <header class="agent-topbar">
       <div class="agent-brand">
-        <div class="brand-logo-wrap">
-          <span class="brand-icon">🧺</span>
-        </div>
+        <img src="/logo.svg" alt="Cloth Bank Logo" class="brand-logo-wrap" />
         <div>
           <span class="brand-name">Cloth Bank</span>
           <span class="brand-role-badge">Field Logistics</span>

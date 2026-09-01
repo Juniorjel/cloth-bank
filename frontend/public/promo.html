@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloth Bank — Official Project Promotional Video</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-main: #0B0F19;
+      --bg-card: #131B2E;
+      --primary: #3B82F6;
+      --primary-gradient: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+      --accent: #10B981;
+      --accent-warm: #F59E0B;
+      --danger: #EF4444;
+      --text-white: #FFFFFF;
+      --text-muted: #94A3B8;
+      --border-glass: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      background-color: var(--bg-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    /* Video Player Wrapper */
+    .video-viewport-wrapper {
+      width: 100%;
+      max-width: 1100px;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(59, 130, 246, 0.2);
+      border: 1px solid var(--border-glass);
+      position: relative;
+    }
+
+    .video-screen {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #172033 0%, #080C14 100%);
+    }
+
+    /* Scene Containers */
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: scale(0.95);
+    }
+
+    .scene.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* Common Graphic Elements */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .badge-emergency {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #F87171;
+    }
+
+    .badge-solution {
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+      color: #60A5FA;
+    }
+
+    .badge-impact {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #34D399;
+    }
+
+    .scene-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.2;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #FFFFFF 0%, #CBD5E1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .scene-subtitle {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 750px;
+      margin-bottom: 25px;
+      line-height: 1.6;
+    }
+
+    /* Scene 1: Flood Crisis Animation */
+    .rain-container {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .drop {
+      position: absolute;
+      background: linear-gradient(transparent, rgba(147, 197, 253, 0.6));
+      width: 2px;
+      height: 35px;
+      animation: fall linear infinite;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(-50px); }
+      100% { transform: translateY(600px); }
+    }
+
+    .crisis-card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+      z-index: 2;
+    }
+
+    .crisis-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 24px 16px;
+      text-align: center;
+      transform: translateY(20px);
+      opacity: 0;
+      animation: fadeInUp 0.6s forwards ease-out;
+    }
+
+    .crisis-card:nth-child(1) { animation-delay: 0.3s; }
+    .crisis-card:nth-child(2) { animation-delay: 0.6s; }
+    .crisis-card:nth-child(3) { animation-delay: 0.9s; }
+
+    .crisis-icon {
+      font-size: 2.8rem;
+      margin-bottom: 12px;
+    }
+
+    .crisis-label {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+    }
+
+    .crisis-desc {
+      font-size: 0.85rem;
+      color: #94A3B8;
+    }
+
+    /* Scene 2: Ram's Dilemma */
+    .ram-container {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      max-width: 880px;
+      width: 100%;
+      z-index: 2;
+    }
+
+    .ram-character-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .ram-avatar {
+      width: 90px;
+      height: 90px;
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      margin: 0 auto 16px;
+      border: 3px solid rgba(255,255,255,0.2);
+    }
+
+    .job-badge {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.2);
+      color: #FBBF24;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .vs-divider {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .ram-struggle-list {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .struggle-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 4px solid var(--danger);
+      padding: 16px 20px;
+      border-radius: 0 12px 12px 0;
+      animation: slideInRight 0.5s forwards ease-out;
+    }
+
+    .struggle-item:nth-child(2) { animation-delay: 0.4s; }
+    .struggle-item:nth-child(3) { animation-delay: 0.8s; }
+
+    /* Scene 3: Solution Showcase */
+    .solution-mockup-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      max-width: 900px;
+      width: 100%;
+      z-index: 2;
+    }
+
+    .feature-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .feature-box.primary {
+      border-color: rgba(59, 130, 246, 0.5);
+      background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), var(--bg-card));
+    }
+
+    .feature-icon-wrapper {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .feature-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .feature-bullets {
+      list-style: none;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .feature-bullets li::before {
+      content: "✓ ";
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* Scene 4: Interactive Field Map & Logistics */
+    .logistics-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 850px;
+      z-index: 2;
+    }
+
+    .logistics-track {
+      width: 100%;
+      height: 120px;
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(255,255,255,0.2);
+      border-radius: 24px;
+      position: relative;
+      margin: 30px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+    }
+
+    .track-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 3;
+    }
+
+    .node-dot {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .node-text {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .animated-van {
+      position: absolute;
+      left: 10%;
+      font-size: 2.2rem;
+      filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8));
+      animation: driveVan 6s infinite ease-in-out;
+      z-index: 4;
+    }
+
+    @keyframes driveVan {
+      0% { left: 10%; transform: scaleX(1); }
+      45% { left: 82%; transform: scaleX(1); }
+      50% { left: 82%; transform: scaleX(-1); }
+      95% { left: 10%; transform: scaleX(-1); }
+      100% { left: 10%; transform: scaleX(1); }
+    }
+
+    /* Scene 5: Live Transparency & Counters */
+    .dashboard-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 860px;
+      margin-bottom: 20px;
+      z-index: 2;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .stat-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.6rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin: 8px 0;
+    }
+
+    .stat-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      max-width: 860px;
+      background: rgba(255,255,255,0.06);
+      height: 24px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 10px;
+      border: 1px solid var(--border-glass);
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 78%;
+      background: linear-gradient(90deg, #3B82F6, #10B981);
+      border-radius: 12px;
+      transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Scene 6: CTA */
+    .cta-logo {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6));
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid var(--border-glass);
+    }
+
+    /* Voiceover Subtitle Bar */
+    .subtitles-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      padding: 12px 30px;
+      border-radius: 30px;
+      font-size: 1.05rem;
+      color: #F1F5F9;
+      text-align: center;
+      max-width: 85%;
+      z-index: 10;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      transition: all 0.3s;
+    }
+
+    /* Video Player Controls */
+    .video-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: #0F172A;
+      border-top: 1px solid var(--border-glass);
+      gap: 20px;
+    }
+
+    .controls-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ctrl-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.2s;
+    }
+
+    .ctrl-btn:hover {
+      background: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .timeline-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .timeline-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timeline-progress {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: 4px;
+      transition: width 0.1s linear;
+    }
+
+    .time-display {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Space Grotesk', monospace;
+    }
+
+    .scene-navigator {
+      display: flex;
+      gap: 8px;
+    }
+
+    .scene-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .scene-pill.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* Keyframes */
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Promotional Video Player -->
+  <div class="video-viewport-wrapper" id="videoContainer">
+    <div class="video-screen" id="screen">
+      
+      <!-- Rain overlay for Disaster scene -->
+      <div class="rain-container" id="rain"></div>
+
+      <!-- SCENE 1: The Crisis (Rasuwa Floods) -->
+      <div class="scene" id="scene-1">
+        <span class="badge badge-emergency">⚠️ Disaster Response • Rasuwa Floods</span>
+        <h1 class="scene-title">When Floods Strike, Warmth is Survival</h1>
+        <p class="scene-subtitle">
+          In natural disasters across Nepal, families lose their homes, blankets, and clothing within minutes.
+        </p>
+        <div class="crisis-card-grid">
+          <div class="crisis-card">
+            <div class="crisis-icon">🌊</div>
+            <div class="crisis-label">Flash Floods</div>
+            <div class="crisis-desc">Rasuwa & Melamchi landslides wash away entire household belongings.</div>
+          </div>
+          <div class="crisis-card">
+            <div class="crisis-icon">❄️</div>
+            <div class="crisis-label">Freezing Cold</div>
+            <div class="crisis-desc">Children & elderly left without warm jackets, thermals, or quilts.</div>
+          </div>
+          <div class="crisis-card">
+            <div class="crisis-icon">📦</div>
+            <div class="crisis-label">Chaotic Aid</div>
+            <div class="crisis-desc">Ad-hoc collection camps lack inventory tracking and fair distribution.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 2: The Dilemma (Ram's 10-to-6 Job) -->
+      <div class="scene" id="scene-2">
+        <span class="badge badge-emergency">⏰ The Donor's Bottleneck</span>
+        <h1 class="scene-title">The Willing Donor with No Time</h1>
+        <p class="scene-subtitle">
+          Meet Ram: He has closets of clean clothes to donate, but his busy job makes traditional drop-offs impossible.
+        </p>
+        <div class="ram-container">
+          <div class="ram-character-card">
+            <div class="ram-avatar">👨‍💼</div>
+            <h3>Ram Sharma</h3>
+            <p class="text-muted">Working Professional</p>
+            <span class="job-badge">🕒 10:00 AM – 6:00 PM Duty</span>
+          </div>
+          <div class="vs-divider">VS</div>
+          <div class="ram-struggle-list">
+            <div class="struggle-item">
+              <span style="font-size: 1.5rem;">🚪</span>
+              <div>
+                <strong>Camps Closed After Hours</strong>
+                <p style="font-size: 0.85rem; color: #94A3B8;">Physical collection centers shut down at 5:00 PM.</p>
+              </div>
+            </div>
+            <div class="struggle-item">
+              <span style="font-size: 1.5rem;">🚦</span>
+              <div>
+                <strong>Traffic & Long Distance</strong>
+                <p style="font-size: 0.85rem; color: #94A3B8;">Cannot commute across town on busy weekdays.</p>
+              </div>
+            </div>
+            <div class="struggle-item">
+              <span style="font-size: 1.5rem;">❓</span>
+              <div>
+                <strong>Zero Accountability</strong>
+                <p style="font-size: 0.85rem; color: #94A3B8;">No way to know if donated clothes reach real victims.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: The Solution (Cloth Bank Platform) -->
+      <div class="scene" id="scene-3">
+        <span class="badge badge-solution">✨ The Digital Solution</span>
+        <h1 class="scene-title">Introducing Cloth Bank (कपडा बैंक)</h1>
+        <p class="scene-subtitle">
+          A smart logistics platform connecting donors directly to disaster relief campaigns.
+        </p>
+        <div class="solution-mockup-wrapper">
+          <div class="feature-box primary">
+            <div class="feature-icon-wrapper" style="background: rgba(59,130,246,0.2); color: #60A5FA;">🏠</div>
+            <div class="feature-title">Option A: Doorstep Pickup</div>
+            <p style="color: #94A3B8; font-size: 0.9rem;">Ram books a pickup from his office or home with GPS precision.</p>
+            <ul class="feature-bullets">
+              <li>Automatic Google Maps pin</li>
+              <li>Flexible scheduled time slot</li>
+              <li>Driver dispatches to his door</li>
+            </ul>
+          </div>
+          <div class="feature-box">
+            <div class="feature-icon-wrapper" style="background: rgba(16,185,129,0.2); color: #34D399;">📍</div>
+            <div class="feature-title">Option B: Self Drop-off</div>
+            <p style="color: #94A3B8; font-size: 0.9rem;">Prefer dropping off in person? Choose an authorized hub.</p>
+            <ul class="feature-bullets">
+              <li>Verified collection points</li>
+              <li>Instant digital tracking receipt</li>
+              <li>QR verification at hub</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: Logistics & Field Agent Tracking -->
+      <div class="scene" id="scene-4">
+        <span class="badge badge-solution">🚚 Smart Field Operations</span>
+        <h1 class="scene-title">Automated Logistics & Verification</h1>
+        <p class="scene-subtitle">
+          Dedicated field agents pick up, sanitize, and route packages directly to central disaster relief hubs.
+        </p>
+        <div class="logistics-view">
+          <div class="logistics-track">
+            <div class="animated-van">🚐💨</div>
+            <div class="track-node">
+              <div class="node-dot">🏠</div>
+              <div class="node-text">Donor's Home</div>
+            </div>
+            <div class="track-node">
+              <div class="node-dot">📱</div>
+              <div class="node-text">Agent Pickup</div>
+            </div>
+            <div class="track-node">
+              <div class="node-dot">🏢</div>
+              <div class="node-text">Central Hub</div>
+            </div>
+            <div class="track-node">
+              <div class="node-dot">🏔️</div>
+              <div class="node-text">Rasuwa Victims</div>
+            </div>
+          </div>
+          <p style="font-size: 0.95rem; color: #CBD5E1; text-align: center;">
+            Every bundle is cataloged: <strong style="color: #60A5FA;">Men</strong> • <strong style="color: #F472B6;">Women</strong> • <strong style="color: #FBBF24;">Children</strong> • <strong style="color: #34D399;">Winter Blankets</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- SCENE 5: Real-Time Transparency & Impact -->
+      <div class="scene" id="scene-5">
+        <span class="badge badge-impact">📊 100% Campaign Transparency</span>
+        <h1 class="scene-title">Real-Time Campaign Tracking</h1>
+        <p class="scene-subtitle">
+          Donors and NGOs track every single piece of clothing collected for the Rasuwa Flood Campaign in real-time.
+        </p>
+        <div class="dashboard-preview">
+          <div class="stat-card">
+            <div class="stat-title">Target Goal</div>
+            <div class="stat-num" style="color: #60A5FA;">2,000</div>
+            <p style="font-size: 0.8rem; color: #94A3B8;">Clothing Sets Needed</p>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Live Collected</div>
+            <div class="stat-num" id="liveCounter">1,560</div>
+            <p style="font-size: 0.8rem; color: #34D399;">78% Goal Achieved</p>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Families Helped</div>
+            <div class="stat-num" style="color: #F59E0B;">390+</div>
+            <p style="font-size: 0.8rem; color: #94A3B8;">In Rasuwa & Melamchi</p>
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- SCENE 6: Call To Action -->
+      <div class="scene" id="scene-6">
+        <img src="./logo.svg" alt="Cloth Bank Logo" style="width: 80px; height: 80px; margin-bottom: 16px; filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6)); border-radius: 20px;" />
+        <span class="badge badge-impact">🌱 Join The Movement</span>
+        <h1 class="scene-title">Cloth Bank: Giving Warmth, Restoring Hope</h1>
+        <p class="scene-subtitle">
+          Don’t let your surplus clothes sit idle. Schedule a doorstep pickup or support our active disaster campaigns today.
+        </p>
+        <div class="cta-actions">
+          <a href="./cloth_bank_promo_video.webp" download="cloth_bank_promotional_video.webp" class="btn btn-primary">⬇️ Download Recorded Video (.webp)</a>
+          <button class="btn btn-secondary" onclick="restartVideo()">🔄 Replay Animation</button>
+        </div>
+      </div>
+
+      <!-- Subtitles & Voiceover Ticker -->
+      <div class="subtitles-bar" id="subtitles">
+        🔊 Loading promotional video narration...
+      </div>
+    </div>
+
+    <!-- Video Player Controls Bar -->
+    <div class="video-controls">
+      <div class="controls-left">
+        <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" title="Play/Pause">▶</button>
+        <button class="ctrl-btn" id="audioBtn" onclick="toggleVoiceover()" title="Toggle Voiceover Audio">🔊</button>
+      </div>
+
+      <div class="timeline-container">
+        <div class="timeline-bar" id="timelineBar" onclick="seekTimeline(event)">
+          <div class="timeline-progress" id="timelineProgress"></div>
+        </div>
+        <div class="time-display">
+          <span id="currentTime">00:00</span>
+          <span id="totalTime">01:00</span>
+        </div>
+      </div>
+
+      <div class="scene-navigator">
+        <button class="scene-pill active" onclick="goToScene(0)">1. Crisis</button>
+        <button class="scene-pill" onclick="goToScene(1)">2. Ram</button>
+        <button class="scene-pill" onclick="goToScene(2)">3. Solution</button>
+        <button class="scene-pill" onclick="goToScene(3)">4. Logistics</button>
+        <button class="scene-pill" onclick="goToScene(4)">5. Tracking</button>
+        <button class="scene-pill" onclick="goToScene(5)">6. Action</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Promotional Video Narration Script & Scene Data
+    const scenes = [
+      {
+        id: 'scene-1',
+        duration: 10,
+        subtitles: "In Nepal, seasonal disasters like the recent Rasuwa floods leave hundreds of families without shelter and clothing within hours.",
+        voice: "In Nepal, seasonal disasters like the recent Rasuwa floods leave hundreds of families without shelter and clothing within hours."
+      },
+      {
+        id: 'scene-2',
+        duration: 10,
+        subtitles: "Willing donors like Ram want to help. But working a 10 to 6 job makes visiting distant collection camps nearly impossible.",
+        voice: "Willing donors like Ram want to help. But working a 10 to 6 job makes visiting distant collection camps nearly impossible."
+      },
+      {
+        id: 'scene-3',
+        duration: 10,
+        subtitles: "Introducing Cloth Bank: Ram can now schedule a free doorstep pickup or select a convenient drop-off hub in seconds.",
+        voice: "Introducing Cloth Bank. Ram can now schedule a free doorstep pickup or select a convenient drop-off hub in seconds."
+      },
+      {
+        id: 'scene-4',
+        duration: 10,
+        subtitles: "Field agents arrive with GPS routing, collect the clothes, and deliver them to central relief sorting hubs.",
+        voice: "Field agents arrive with GPS routing, collect the clothes, and deliver them to central relief sorting hubs."
+      },
+      {
+        id: 'scene-5',
+        duration: 10,
+        subtitles: "Every donation is tracked in real-time. Donors see live campaign progress, ensuring 100% transparency.",
+        voice: "Every donation is tracked in real-time. Donors see live campaign progress, ensuring 100 percent transparency."
+      },
+      {
+        id: 'scene-6',
+        duration: 10,
+        subtitles: "Cloth Bank: Turning idle clothes into lifesaving warmth. Schedule your pickup today!",
+        voice: "Cloth Bank: Turning idle clothes into lifesaving warmth. Schedule your pickup today!"
+      }
+    ];
+
+    let currentSceneIdx = 0;
+    let isPlaying = false;
+    let isVoiceMuted = false;
+    let videoTimer = null;
+    let sceneTimer = null;
+    let elapsedSeconds = 0;
+    const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0);
+
+    // Audio SFX Generator via Web Audio API
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // Voiceover Speech Synthesis
+    function speakText(text) {
+      if (isVoiceMuted || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Generate Raindrops for Scene 1
+    function generateRain() {
+      const rainContainer = document.getElementById('rain');
+      rainContainer.innerHTML = '';
+      for (let i = 0; i < 40; i++) {
+        const drop = document.createElement('div');
+        drop.className = 'drop';
+        drop.style.left = Math.random() * 100 + '%';
+        drop.style.animationDuration = 0.5 + Math.random() * 0.5 + 's';
+        drop.style.animationDelay = Math.random() * 2 + 's';
+        rainContainer.appendChild(drop);
+      }
+    }
+    generateRain();
+
+    // Scene Navigation
+    function showScene(idx) {
+      currentSceneIdx = idx;
+      scenes.forEach((scene, i) => {
+        const el = document.getElementById(scene.id);
+        if (el) el.classList.toggle('active', i === idx);
+      });
+
+      // Update pills
+      document.querySelectorAll('.scene-pill').forEach((pill, i) => {
+        pill.classList.toggle('active', i === idx);
+      });
+
+      // Subtitles & Voice
+      const cur = scenes[idx];
+      document.getElementById('subtitles').innerHTML = `🔊 ${cur.subtitles}`;
+      if (isPlaying) {
+        speakText(cur.voice);
+        playBeep(520, 'triangle', 0.15);
+      }
+
+      // Rain visibility
+      document.getElementById('rain').style.display = idx === 0 ? 'block' : 'none';
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('playBtn').innerHTML = isPlaying ? '⏸' : '▶';
+      if (isPlaying) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        startPlayback();
+      } else {
+        pausePlayback();
+      }
+    }
+
+    function startPlayback() {
+      speakText(scenes[currentSceneIdx].voice);
+      clearInterval(videoTimer);
+      videoTimer = setInterval(() => {
+        elapsedSeconds += 0.2;
+        updateTimeline();
+
+        // Calculate current scene from elapsed time
+        let accumulated = 0;
+        for (let i = 0; i < scenes.length; i++) {
+          accumulated += scenes[i].duration;
+          if (elapsedSeconds <= accumulated) {
+            if (currentSceneIdx !== i) {
+              showScene(i);
+            }
+            break;
+          }
+        }
+
+        if (elapsedSeconds >= totalDuration) {
+          elapsedSeconds = totalDuration;
+          updateTimeline();
+          pausePlayback();
+        }
+      }, 200);
+    }
+
+    function pausePlayback() {
+      isPlaying = false;
+      document.getElementById('playBtn').innerHTML = '▶';
+      clearInterval(videoTimer);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    }
+
+    function updateTimeline() {
+      const pct = (elapsedSeconds / totalDuration) * 100;
+      document.getElementById('timelineProgress').style.width = pct + '%';
+      
+      const format = (s) => {
+        const m = Math.floor(s / 60).toString().padStart(2, '0');
+        const sec = Math.floor(s % 60).toString().padStart(2, '0');
+        return `${m}:${sec}`;
+      };
+      document.getElementById('currentTime').innerText = format(elapsedSeconds);
+      document.getElementById('totalTime').innerText = format(totalDuration);
+    }
+
+    function goToScene(idx) {
+      let accumulated = 0;
+      for (let i = 0; i < idx; i++) {
+        accumulated += scenes[i].duration;
+      }
+      elapsedSeconds = accumulated;
+      updateTimeline();
+      showScene(idx);
+    }
+
+    function seekTimeline(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const ratio = clickX / rect.width;
+      elapsedSeconds = ratio * totalDuration;
+      updateTimeline();
+
+      let accumulated = 0;
+      for (let i = 0; i < scenes.length; i++) {
+        accumulated += scenes[i].duration;
+        if (elapsedSeconds <= accumulated) {
+          showScene(i);
+          break;
+        }
+      }
+    }
+
+    function toggleVoiceover() {
+      isVoiceMuted = !isVoiceMuted;
+      document.getElementById('audioBtn').innerHTML = isVoiceMuted ? '🔇' : '🔊';
+      if (isVoiceMuted && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      } else if (isPlaying) {
+        speakText(scenes[currentSceneIdx].voice);
+      }
+    }
+
+    function restartVideo() {
+      elapsedSeconds = 0;
+      updateTimeline();
+      showScene(0);
+      if (!isPlaying) togglePlay();
+    }
+
+    // Init
+    showScene(0);
+    updateTimeline();
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@
 
     <div class="login-card">
       <div class="brand-badge">
-        <div class="brand-icon">🧺</div>
+        <img src="/logo.svg" alt="Cloth Bank Logo" class="brand-logo-img" />
       </div>
 
       <div class="login-header">
@@ -214,6 +214,12 @@ export default {
   display: flex;
   justify-content: center;
   margin-bottom: 16px;
+}
+.brand-logo-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
 }
 .brand-icon {
   width: 58px;

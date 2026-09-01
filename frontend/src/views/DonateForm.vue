@@ -4,7 +4,7 @@
     <header class="donate-navbar">
       <div class="navbar-container">
         <div class="brand">
-          <span class="brand-icon">🧺</span>
+          <img src="/logo.svg" alt="Cloth Bank Logo" class="brand-logo-img" />
           <span class="brand-title">Cloth Bank</span>
           <span class="brand-tag">Community Aid</span>
         </div>
@@ -561,6 +561,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.brand-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
 }
 .brand-icon {
   font-size: 24px;

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 56" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="clothGradFull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="warmthGradFull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logo Mark -->
+  <g transform="translate(4, 4)">
+    <rect width="48" height="48" rx="12" fill="url(#clothGradFull)" />
+    <!-- Protective shelter / Mountain roof outline -->
+    <path d="M12 21L24 11L36 21" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Clothing Hanger -->
+    <path d="M24 16V18.5C24 19.5 24.8 20.5 25.8 20.5C26.8 20.5 27.5 19.8 27.5 19" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round" />
+    <!-- Clothes Container / Heart -->
+    <path d="M16 23H32L30 35C30 36.5 28.5 37.5 27 37.5H21C19.5 37.5 18 36.5 18 35L16 23Z" fill="url(#warmthGradFull)" />
+    <path d="M19 28H29" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+    <path d="M21 33H27" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="64" y="27" font-family="Plus Jakarta Sans, Inter, sans-serif" font-size="20" font-weight="800" fill="#0F172A" letter-spacing="-0.5">Cloth Bank</text>
+  <text x="64" y="44" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="700" fill="#2563EB" letter-spacing="0.2">कपडा बैंक • NEPAL</text>
+</svg>
