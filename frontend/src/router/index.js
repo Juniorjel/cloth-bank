@@ -31,6 +31,7 @@ const Campaigns      = () => import('../views/admin/Campaigns.vue')
 const Donations      = () => import('../views/admin/Donations.vue')
 const DonationDetail = () => import('../views/admin/DonationDetail.vue')
 const Users          = () => import('../views/admin/Users.vue')
+const Roles          = () => import('../views/admin/Roles.vue')
 const ClothTypes     = () => import('../views/admin/ClothTypes.vue')
 const AgentPickups   = () => import('../views/agent/Pickups.vue')
 
@@ -51,6 +52,7 @@ const routes = [
       { path: 'donations',    component: Donations },
       { path: 'donations/:id', component: DonationDetail },
       { path: 'users',        component: Users },
+      { path: 'roles',        component: Roles },
     ]
   },
 

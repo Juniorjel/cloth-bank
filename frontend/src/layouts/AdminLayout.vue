@@ -101,6 +101,16 @@
         </router-link>
 
         <router-link
+          to="/admin/roles"
+          class="nav-item"
+          active-class="nav-item-active"
+          @click.native="onNavClick"
+        >
+          <span class="nav-icon">🛡️</span>
+          <span class="nav-label" v-if="!desktopSidebarCollapsed || mobileSidebarOpen">Roles & Permissions</span>
+        </router-link>
+
+        <router-link
           to="/donate"
           target="_blank"
           class="nav-item d-sm-none"
