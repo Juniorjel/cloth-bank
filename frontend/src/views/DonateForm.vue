@@ -171,19 +171,6 @@
               </div>
             </div>
 
-            <!-- Place / Building / Office Name -->
-            <div class="form-group mb-3">
-              <label>
-                {{ form.location_tag === 'office' ? 'Office / Company / Building Name' : 'House / Building / Apartment Name' }}
-                <span class="text-muted" style="font-size:12px; font-weight:normal">(Optional)</span>
-              </label>
-              <input
-                v-model="form.place_name"
-                class="form-control"
-                :placeholder="form.location_tag === 'office' ? 'e.g. Nabil Bank Head Office, 3rd Floor' : 'e.g. Sunrise Apartment, Flat 402'"
-              />
-            </div>
-
             <!-- Street Address & Search Action -->
             <div class="form-group mb-3">
               <label>Street Address / Area / Landmark <span class="req">*</span></label>
@@ -409,7 +396,6 @@ export default {
         donor_email:         '',
         collection_type:     'pickup',
         location_tag:        'office',
-        place_name:          '',
         pickup_instructions: '',
         latitude:            null,
         longitude:           null,
@@ -582,26 +568,17 @@ export default {
     },
 
     async searchAddressOnMap() {
-      const place = (this.form.place_name || '').trim()
       const address = (this.form.address || '').trim()
 
-      if (!place && !address) {
-        alert('Please enter an office name, landmark, or street address.')
+      if (!address) {
+        alert('Please enter a street, landmark, or area name.')
         return
       }
 
       this.searchingLocation = true
 
-      // Clean place name: strip floor/room/flat numbers like 'Floor 3', '3rd Floor', 'Flat 4B'
-      const cleanPlace = place
-        .replace(/\b(\d+(st|nd|rd|th)?\s*floor|floor\s*\d+|room\s*\d+|flat\s*\d+|block\s*[a-z0-9]+)\b/gi, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-
       const queriesToTry = []
-      if (cleanPlace && address) queriesToTry.push(`${cleanPlace}, ${address}`)
-      if (cleanPlace) queriesToTry.push(cleanPlace)
-      if (address && address !== cleanPlace) queriesToTry.push(address)
+      queriesToTry.push(address)
 
       // Split address tokens (e.g. "Durbar Marg", "Kathmandu")
       const tokens = address.split(/[,;]/).map(t => t.trim()).filter(Boolean)
@@ -663,7 +640,7 @@ export default {
           this.initLeafletMap(foundLat, foundLng)
         }
       } else {
-        alert('Could not pin exact GPS for this name. Please add a nearby area or street name (e.g. Durbar Marg, Baneshwor, Thamel).')
+        alert('Could not pin exact GPS for this address. Please try adding city/area name (e.g. Durbar Marg, Baneshwor, Kathmandu).')
       }
     },
 
@@ -714,9 +691,9 @@ export default {
       this.loading = true
 
       let fullAddress = this.form.address ? this.form.address.trim() : ''
-      if (this.form.place_name && this.form.place_name.trim()) {
+      if (this.form.location_tag) {
         const tagIcon = this.form.location_tag === 'office' ? '🏢 Office' : (this.form.location_tag === 'home' ? '🏠 Home' : '📍 Place')
-        fullAddress = `[${tagIcon}: ${this.form.place_name.trim()}] ${fullAddress}`
+        fullAddress = `[${tagIcon}] ${fullAddress}`
       }
       if (this.form.pickup_instructions && this.form.pickup_instructions.trim()) {
         fullAddress = `${fullAddress} (Note: ${this.form.pickup_instructions.trim()})`
