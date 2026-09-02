@@ -120,6 +120,8 @@ class User extends Authenticatable
                 'dashboard.view',
                 'donations.view',
                 'donations.create',
+                'donations.accept',
+                'donations.reject',
                 'donations.verify',
                 'donations.assign_driver',
                 'donations.update_status',

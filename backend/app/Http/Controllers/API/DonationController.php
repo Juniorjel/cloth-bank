@@ -104,14 +104,86 @@ class DonationController extends Controller
         }
     }
 
+    public function accept(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin() && !$user->hasPermission('donations.accept')) {
+            return response()->json(['message' => 'Unauthorized. Permission to accept donations required.'], 403);
+        }
+
+        $donation = $this->donationRepo->find($id);
+        if ($donation->status !== 'pending') {
+            return response()->json([
+                'message' => 'Only pending donations can be accepted. Current status: ' . $donation->status
+            ], 422);
+        }
+
+        $updated = $this->donationRepo->update($id, [
+            'status'      => 'accepted',
+            'accepted_at' => now(),
+            'accepted_by' => $user->id,
+        ]);
+
+        return response()->json([
+            'message'  => 'Donation accepted successfully.',
+            'donation' => $updated,
+        ]);
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin() && !$user->hasPermission('donations.reject')) {
+            return response()->json(['message' => 'Unauthorized. Permission to reject donations required.'], 403);
+        }
+
+        $data = $request->validate([
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+
+        $donation = $this->donationRepo->find($id);
+        if (!in_array($donation->status, ['pending', 'accepted'])) {
+            return response()->json([
+                'message' => 'Cannot reject a donation that is already ' . $donation->status
+            ], 422);
+        }
+
+        $updated = $this->donationRepo->update($id, [
+            'status'           => 'rejected',
+            'rejection_reason' => $data['rejection_reason'],
+            'rejected_at'      => now(),
+            'rejected_by'      => $user->id,
+            'agent_id'         => null,
+        ]);
+
+        return response()->json([
+            'message'  => 'Donation rejected.',
+            'donation' => $updated,
+        ]);
+    }
+
     public function assign(Request $request, $id)
     {
+        $user = $request->user();
+        if (!$user->isAdmin() && !$user->hasPermission('donations.assign_driver')) {
+            return response()->json(['message' => 'Unauthorized. Permission to assign drivers required.'], 403);
+        }
+
+        $donation = $this->donationRepo->find($id);
+
+        // Guard: Donation must be accepted before assigning a driver
+        if (!in_array($donation->status, ['accepted', 'assigned'])) {
+            return response()->json([
+                'message' => 'Donation must be accepted before assigning a logistics agent. Current status: ' . $donation->status
+            ], 422);
+        }
+
         $data = $request->validate(['agent_id' => 'required|exists:users,id']);
-        $donation = $this->donationRepo->update($id, [
+        $updated = $this->donationRepo->update($id, [
             'agent_id' => $data['agent_id'],
             'status'   => 'assigned',
         ]);
-        return response()->json($donation);
+        return response()->json($updated);
     }
 
     public function markPickedUp(Request $request, $id)
@@ -162,5 +234,16 @@ class DonationController extends Controller
     public function agentPickups(Request $request)
     {
         return response()->json($this->donationRepo->getByAgent($request->user()->id));
+    }
+
+    public function myDonations(Request $request)
+    {
+        $user = $request->user();
+        $donations = \App\Models\Donation::with(['campaign', 'items.clothType', 'items.images'])
+            ->where('user_id', $user->id)
+            ->orWhere('donor_email', $user->email)
+            ->latest()
+            ->get();
+        return response()->json($donations);
     }
 }

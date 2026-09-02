@@ -17,6 +17,12 @@ export default {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
+  accept(id) {
+    return api.patch(`/donations/${id}/accept`)
+  },
+  reject(id, reason) {
+    return api.patch(`/donations/${id}/reject`, { rejection_reason: reason })
+  },
   assign(id, agentId) {
     return api.patch(`/donations/${id}/assign`, { agent_id: agentId })
   },

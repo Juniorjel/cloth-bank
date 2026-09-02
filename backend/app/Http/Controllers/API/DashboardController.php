@@ -16,6 +16,8 @@ class DashboardController extends Controller
     {
         $totalDonations    = Donation::count();
         $pendingCount      = Donation::where('status', 'pending')->count();
+        $acceptedCount     = Donation::where('status', 'accepted')->count();
+        $rejectedCount     = Donation::where('status', 'rejected')->count();
         $assignedCount     = Donation::where('status', 'assigned')->count();
         $pickedUpCount     = Donation::where('status', 'picked_up')->count();
         $deliveredCount    = Donation::where('status', 'delivered')->count();
@@ -24,7 +26,9 @@ class DashboardController extends Controller
         $pickupModeCount   = Donation::where('collection_type', 'pickup')->count();
         $dropModeCount     = Donation::where('collection_type', 'drop')->count();
 
-        $totalClothes      = DonationItem::sum('quantity') ?: 0;
+        $totalClothes      = DonationItem::whereHas('donation', function ($q) {
+            $q->where('status', '!=', 'rejected');
+        })->sum('quantity') ?: 0;
         $verifiedClothes   = Donation::where('status', 'verified')->sum('verified_quantity') ?: 0;
 
         $stats = [
@@ -32,6 +36,8 @@ class DashboardController extends Controller
             'active_campaigns'   => Campaign::where('status', 'active')->count(),
             'total_donations'    => $totalDonations,
             'pending_donations'  => $pendingCount,
+            'accepted_donations' => $acceptedCount,
+            'rejected_donations' => $rejectedCount,
             'assigned_donations' => $assignedCount,
             'picked_up_donations'=> $pickedUpCount,
             'delivered_donations'=> $deliveredCount,
@@ -46,6 +52,8 @@ class DashboardController extends Controller
         // Status breakdown object & list
         $statusBreakdownObj = [
             'pending'   => $pendingCount,
+            'accepted'  => $acceptedCount,
+            'rejected'  => $rejectedCount,
             'assigned'  => $assignedCount,
             'picked_up' => $pickedUpCount,
             'delivered' => $deliveredCount,
@@ -54,10 +62,12 @@ class DashboardController extends Controller
 
         $statusBreakdownList = [
             ['status' => 'Pending',   'key' => 'pending',   'count' => $pendingCount,   'color' => '#f59e0b'],
-            ['status' => 'Assigned',  'key' => 'assigned',  'count' => $assignedCount,  'color' => '#4f46e5'],
-            ['status' => 'Picked Up', 'key' => 'picked_up', 'count' => $pickedUpCount,  'color' => '#0ea5e9'],
-            ['status' => 'Delivered', 'key' => 'delivered', 'count' => $deliveredCount, 'color' => '#ef4444'],
+            ['status' => 'Accepted',  'key' => 'accepted',  'count' => $acceptedCount,  'color' => '#6366f1'],
+            ['status' => 'Assigned',  'key' => 'assigned',  'count' => $assignedCount,  'color' => '#0ea5e9'],
+            ['status' => 'Picked Up', 'key' => 'picked_up', 'count' => $pickedUpCount,  'color' => '#8b5cf6'],
+            ['status' => 'Delivered', 'key' => 'delivered', 'count' => $deliveredCount, 'color' => '#ec4899'],
             ['status' => 'Verified',  'key' => 'verified',  'count' => $verifiedCount,  'color' => '#10b981'],
+            ['status' => 'Rejected',  'key' => 'rejected',  'count' => $rejectedCount,  'color' => '#ef4444'],
         ];
 
         // Last 7 days donation trend

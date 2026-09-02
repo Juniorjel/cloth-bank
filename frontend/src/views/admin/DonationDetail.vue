@@ -23,8 +23,29 @@
     </div>
 
     <div v-else-if="donation">
-      <!-- ── Status Stepper Bar ── -->
-      <div class="card stepper-card mb-4">
+      <!-- ── Rejection Banner Alert (if rejected) ── -->
+      <div v-if="donation.status === 'rejected'" class="alert alert-danger rejection-banner mb-4">
+        <div class="d-flex align-items-start gap-3">
+          <span class="rejection-icon">🚫</span>
+          <div class="flex-1">
+            <h4 class="mb-1 font-bold text-danger">This Donation Has Been Rejected</h4>
+            <p class="mb-2 text-danger-subtle">
+              <strong>Reason:</strong> {{ donation.rejection_reason || 'No specific reason provided.' }}
+            </p>
+            <div class="rejection-meta d-flex gap-3 text-muted" style="font-size:12px">
+              <span v-if="donation.rejected_by_user || donation.rejected_by">
+                👤 Reviewed by: <strong>{{ donation.rejected_by_user ? donation.rejected_by_user.name : (donation.rejected_by ? 'Staff #' + donation.rejected_by : 'Administrator') }}</strong>
+              </span>
+              <span v-if="donation.rejected_at">
+                🕒 Rejected on: {{ formatDate(donation.rejected_at) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Status Stepper Bar (for active / non-rejected flow) ── -->
+      <div class="card stepper-card mb-4" v-if="donation.status !== 'rejected'">
         <div class="stepper-scroll-wrap">
           <div class="stepper-track">
             <div
@@ -101,6 +122,12 @@
                   </a>
                 </span>
               </div>
+              <div class="info-item" v-if="donation.accepted_at">
+                <span class="info-label">Accepted At</span>
+                <span class="info-value font-medium text-success">
+                  ✓ {{ formatDate(donation.accepted_at) }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -152,16 +179,115 @@
           </div>
         </div>
 
-        <!-- Right: Actions & Fulfillment -->
+        <!-- Right: Actions & Fulfillment Lifecycle -->
         <div class="col-12 col-lg-5">
-          <!-- 1. Dispatch Agent -->
-          <div class="card mb-4" v-if="['pending', 'assigned'].includes(donation.status)">
-            <h3 class="card-title mb-2">Dispatch Field Driver</h3>
+
+          <!-- ── Phase 1: Review & Triage (Pending Status) ── -->
+          <div class="card triage-card mb-4" v-if="donation.status === 'pending'">
+            <div class="card-head-between mb-2">
+              <h3 class="card-title mb-0">⚡ Donation Intake Review</h3>
+              <span class="badge badge-pending">Pending Review</span>
+            </div>
+            <p class="text-muted mb-3" style="font-size:12.5px">
+              Review donor details and items declared. This donation must be <strong>Accepted</strong> before a logistics driver can be assigned.
+            </p>
+
+            <div v-if="triageAlert" :class="'alert alert-' + triageAlertType" class="mb-3">
+              {{ triageAlert }}
+            </div>
+
+            <!-- Triage Buttons (if not showing reject form) -->
+            <div v-if="!showRejectForm" class="d-flex gap-2">
+              <button
+                class="btn btn-success flex-1"
+                :disabled="triageLoading || !canAccept"
+                @click="acceptDonation"
+                title="Approve donation for field pickup / hub reception"
+              >
+                {{ triageLoading ? 'Accepting…' : '✅ Accept Donation' }}
+              </button>
+              <button
+                class="btn btn-outline-danger flex-1"
+                :disabled="triageLoading || !canReject"
+                @click="openRejectForm"
+                title="Reject donation with a stated reason"
+              >
+                ❌ Reject
+              </button>
+            </div>
+
+            <div v-if="!canAccept && !canReject" class="alert alert-warning mt-2 mb-0" style="font-size:11.5px">
+              🔒 You do not have permission to accept or reject donations. Contact Super Admin.
+            </div>
+
+            <!-- Reject Form Inline Box -->
+            <div v-if="showRejectForm" class="reject-box mt-3">
+              <label class="font-bold text-danger mb-1 d-block" style="font-size:12px">
+                Reason for Rejection <span class="req">*</span>
+              </label>
+              <textarea
+                v-model="rejectionReason"
+                class="form-control mb-2"
+                rows="3"
+                placeholder="e.g. Outside service region, damaged/unwearable clothes, duplicate entry, donor unreachable…"
+              ></textarea>
+
+              <!-- Quick Reasons -->
+              <div class="quick-reasons mb-3">
+                <span class="text-muted small d-block mb-1">Quick presets:</span>
+                <div class="d-flex gap-1 flex-wrap">
+                  <button
+                    v-for="r in quickReasons"
+                    :key="r"
+                    type="button"
+                    class="btn btn-sm btn-quick-preset"
+                    @click="rejectionReason = r"
+                  >
+                    {{ r }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 justify-content-end">
+                <button class="btn btn-secondary btn-sm" @click="showRejectForm = false" :disabled="triageLoading">
+                  Cancel
+                </button>
+                <button
+                  class="btn btn-danger btn-sm"
+                  :disabled="!rejectionReason.trim() || triageLoading"
+                  @click="rejectDonation"
+                >
+                  {{ triageLoading ? 'Rejecting…' : '🚫 Confirm Rejection' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Phase 2: Dispatch Field Driver ── -->
+          <!-- State A: Locked Notice when Pending -->
+          <div class="card locked-card mb-4" v-if="donation.status === 'pending'">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="locked-icon">🔒</span>
+              <h3 class="card-title mb-0 text-muted">Field Driver Dispatch (Locked)</h3>
+            </div>
+            <p class="text-muted mb-0" style="font-size:12px">
+              Field logistics driver assignment is locked until this donation is <strong>Accepted</strong> in the review section above.
+            </p>
+          </div>
+
+          <!-- State B: Active Dispatch when Accepted or Assigned -->
+          <div class="card mb-4" v-if="['accepted', 'assigned'].includes(donation.status)">
+            <div class="card-head-between mb-2">
+              <h3 class="card-title mb-0">Dispatch Field Driver</h3>
+              <span class="badge badge-accepted" v-if="donation.status === 'accepted'">Ready for Dispatch</span>
+              <span class="badge badge-assigned" v-else-if="donation.status === 'assigned'">Driver Assigned</span>
+            </div>
             <p class="text-muted mb-3" style="font-size:12.5px">
               Assign an active logistics driver to execute pickup from donor's location.
             </p>
 
-            <div v-if="alertMsg" class="alert alert-success">{{ alertMsg }}</div>
+            <div v-if="alertMsg" class="alert alert-success mb-3">{{ alertMsg }}</div>
+            <div v-if="assignError" class="alert alert-danger mb-3">{{ assignError }}</div>
 
             <div class="form-group">
               <label>Select Driver</label>
@@ -175,15 +301,22 @@
 
             <button
               class="btn btn-primary w-100"
-              :disabled="!selectedAgent || assigning"
+              :disabled="!selectedAgent || assigning || !canAssign"
               @click="assign"
             >
-              {{ assigning ? 'Assigning…' : 'Confirm Assignment' }}
+              {{ assigning ? 'Assigning…' : (donation.status === 'assigned' ? 'Reassign Driver' : 'Confirm Driver Assignment') }}
             </button>
+
+            <!-- Rejection option for Accepted donation before pickup -->
+            <div class="mt-3 pt-2 border-top text-right" v-if="donation.status === 'accepted' && canReject">
+              <button class="btn btn-link text-danger p-0" style="font-size:11.5px" @click="openRejectForm">
+                ⚠️ Need to decline this donation instead? Click to reject.
+              </button>
+            </div>
           </div>
 
-          <!-- 2. Assigned Driver Info -->
-          <div class="card mb-4" v-if="donation.agent">
+          <!-- ── Assigned Driver Profile Card ── -->
+          <div class="card mb-4" v-if="donation.agent && donation.status !== 'rejected'">
             <h3 class="card-title mb-3">Assigned Driver</h3>
             <div class="agent-strip">
               <div class="agent-avatar">
@@ -207,7 +340,7 @@
             </div>
           </div>
 
-          <!-- 3. Verify & Confirm Intake -->
+          <!-- ── Phase 3: Verify & Confirm Intake ── -->
           <div class="card mb-4" v-if="donation.status === 'delivered'">
             <h3 class="card-title mb-2">Verify & Authenticate Intake</h3>
             <p class="text-muted mb-3" style="font-size:12.5px">
@@ -237,7 +370,7 @@
             </button>
           </div>
 
-          <!-- 4. Verified Completed Summary -->
+          <!-- ── Phase 4: Verified Completed Summary ── -->
           <div class="card mb-4" v-if="donation.status === 'verified'">
             <div class="card-head-between mb-2">
               <h3 class="card-title" style="color:var(--success)">🎉 Intake Verified</h3>
@@ -260,6 +393,7 @@
               ✉️ Certificate dispatched to <strong>{{ donation.donor_email }}</strong>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -289,12 +423,27 @@ export default {
       selectedAgent:    '',
       assigning:        false,
       alertMsg:         '',
+      assignError:      '',
       verifiedQuantity: '',
       verifying:        false,
       verifyAlert:      '',
       lightboxUrl:      null,
+      // Triage state
+      triageLoading:    false,
+      triageAlert:      '',
+      triageAlertType:  'success',
+      showRejectForm:   false,
+      rejectionReason:  '',
+      quickReasons: [
+        'Outside serviceable pickup radius',
+        'Soiled / Damaged clothing',
+        'Duplicate donation submission',
+        'Donor unreachable / cancelled request',
+        'Campaign quota already completed'
+      ],
       timelineSteps: [
-        { key: 'pending',   label: 'Pending' },
+        { key: 'pending',   label: 'Submitted' },
+        { key: 'accepted',  label: 'Accepted' },
         { key: 'assigned',  label: 'Assigned' },
         { key: 'picked_up', label: 'Picked Up' },
         { key: 'delivered', label: 'Delivered' },
@@ -306,6 +455,28 @@ export default {
     totalQuantity() {
       if (!this.donation || !this.donation.items) return 0
       return this.donation.items.reduce((sum, i) => sum + (i.quantity || 0), 0)
+    },
+    currentUser() {
+      try {
+        return JSON.parse(localStorage.getItem('user') || localStorage.getItem('cb_user') || '{}')
+      } catch (e) {
+        return {}
+      }
+    },
+    userPermissions() {
+      return this.currentUser.permissions || []
+    },
+    isAdmin() {
+      return this.currentUser.role === 'admin' || this.userPermissions.includes('manage_all')
+    },
+    canAccept() {
+      return this.isAdmin || this.userPermissions.includes('donations.accept')
+    },
+    canReject() {
+      return this.isAdmin || this.userPermissions.includes('donations.reject')
+    },
+    canAssign() {
+      return this.isAdmin || this.userPermissions.includes('donations.assign_driver')
     }
   },
   async created() {
@@ -331,7 +502,7 @@ export default {
     },
     isStepCompleted(stepKey) {
       if (!this.donation) return false
-      const order = ['pending', 'assigned', 'picked_up', 'delivered', 'verified']
+      const order = ['pending', 'accepted', 'assigned', 'picked_up', 'delivered', 'verified']
       const currentIndex = order.indexOf(this.donation.status)
       const stepIndex = order.indexOf(stepKey)
       return stepIndex <= currentIndex
@@ -339,18 +510,58 @@ export default {
     getStepTime(stepKey) {
       if (!this.donation) return ''
       if (stepKey === 'pending')   return this.formatDate(this.donation.created_at)
+      if (stepKey === 'accepted')  return this.formatDate(this.donation.accepted_at)
       if (stepKey === 'picked_up') return this.formatDate(this.donation.picked_up_at)
       if (stepKey === 'delivered') return this.formatDate(this.donation.delivered_at)
       if (stepKey === 'verified')  return this.formatDate(this.donation.verified_at)
       return ''
     },
-    async assign() {
-      this.assigning = true
-      this.alertMsg  = ''
+    openRejectForm() {
+      this.showRejectForm = true
+      this.triageAlert    = ''
+    },
+    async acceptDonation() {
+      this.triageLoading   = true
+      this.triageAlert     = ''
+      this.triageAlertType = 'success'
       try {
-        const res      = await donationApi.assign(this.id, this.selectedAgent)
-        this.donation  = res.data
-        this.alertMsg  = 'Driver assigned successfully!'
+        const res = await donationApi.accept(this.id)
+        this.donation = res.data.donation || res.data
+        this.triageAlert = 'Donation accepted! You can now assign a field driver below.'
+        this.showRejectForm = false
+      } catch (err) {
+        this.triageAlertType = 'danger'
+        this.triageAlert = err.response?.data?.message || 'Failed to accept donation.'
+      } finally {
+        this.triageLoading = false
+      }
+    },
+    async rejectDonation() {
+      if (!this.rejectionReason.trim()) return
+      this.triageLoading   = true
+      this.triageAlert     = ''
+      this.triageAlertType = 'danger'
+      try {
+        const res = await donationApi.reject(this.id, this.rejectionReason.trim())
+        this.donation = res.data.donation || res.data
+        this.showRejectForm = false
+      } catch (err) {
+        this.triageAlertType = 'danger'
+        this.triageAlert = err.response?.data?.message || 'Failed to reject donation.'
+      } finally {
+        this.triageLoading = false
+      }
+    },
+    async assign() {
+      this.assigning   = true
+      this.alertMsg    = ''
+      this.assignError = ''
+      try {
+        const res     = await donationApi.assign(this.id, this.selectedAgent)
+        this.donation = res.data
+        this.alertMsg = 'Driver assigned successfully!'
+      } catch (err) {
+        this.assignError = err.response?.data?.message || 'Driver assignment failed.'
       } finally {
         this.assigning = false
       }
@@ -384,7 +595,6 @@ export default {
       return `${hostBase}${cleanPath}`
     },
     onImageError(e) {
-      // If image not found or blocked, style thumbnail safely
       e.target.style.opacity = '0.7'
       e.target.title = 'Image preview not loaded'
     }
@@ -407,6 +617,21 @@ export default {
   color: var(--primary);
 }
 
+/* Rejection Banner */
+.rejection-banner {
+  background-color: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+}
+.rejection-icon {
+  font-size: 28px;
+}
+.text-danger-subtle {
+  color: #7f1d1d;
+  font-size: 13.5px;
+}
+
 /* Stepper Card */
 .stepper-card {
   padding: 16px 20px;
@@ -420,7 +645,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   position: relative;
-  min-width: 480px;
+  min-width: 580px;
 }
 .stepper-step {
   display: flex;
@@ -514,6 +739,38 @@ export default {
   border: 1px solid var(--border-subtle);
   object-fit: cover;
   cursor: zoom-in;
+}
+
+/* Triage Card & Reject Box */
+.triage-card {
+  border-left: 4px solid var(--primary);
+}
+.reject-box {
+  background: #fdf2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+.btn-quick-preset {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  padding: 2px 8px;
+  color: #475569;
+}
+.btn-quick-preset:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+/* Locked Card */
+.locked-card {
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+}
+.locked-icon {
+  font-size: 16px;
 }
 
 /* Agent Strip */

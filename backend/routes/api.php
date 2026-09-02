@@ -54,6 +54,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/donations', [DonationController::class, 'index']);
         Route::get('/donations/stats', [DonationController::class, 'stats']);
         Route::get('/donations/{id}', [DonationController::class, 'show']);
+        Route::patch('/donations/{id}/accept', [DonationController::class, 'accept']);
+        Route::patch('/donations/{id}/reject', [DonationController::class, 'reject']);
         Route::patch('/donations/{id}/assign', [DonationController::class, 'assign']);
         Route::patch('/donations/{id}/verify', [DonationController::class, 'verify']);
 

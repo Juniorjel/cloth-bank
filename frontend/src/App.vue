@@ -446,6 +446,16 @@ tbody tr:last-child td {
   color: #92400e;
   border-color: #fde68a;
 }
+.badge-accepted {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
+}
+.badge-rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
 .badge-assigned {
   background-color: #eff6ff;
   color: #1e40af;

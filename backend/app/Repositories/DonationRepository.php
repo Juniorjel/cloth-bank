@@ -16,7 +16,7 @@ class DonationRepository implements DonationRepositoryInterface
 
     public function all(array $filters = [])
     {
-        $query = $this->model->with(['campaign', 'agent', 'items.clothType', 'items.images']);
+        $query = $this->model->with(['campaign', 'agent', 'acceptedBy', 'rejectedBy', 'items.clothType', 'items.images']);
 
         if (!empty($filters['campaign_id'])) {
             $query->where('campaign_id', $filters['campaign_id']);
@@ -34,7 +34,7 @@ class DonationRepository implements DonationRepositoryInterface
     public function find($id)
     {
         return $this->model
-            ->with(['campaign', 'agent', 'items.clothType', 'items.images'])
+            ->with(['campaign', 'agent', 'acceptedBy', 'rejectedBy', 'items.clothType', 'items.images'])
             ->findOrFail($id);
     }
 
@@ -47,7 +47,7 @@ class DonationRepository implements DonationRepositoryInterface
     {
         $donation = $this->model->findOrFail($id);
         $donation->update($data);
-        return $donation->fresh(['campaign', 'agent', 'items.clothType', 'items.images']);
+        return $donation->fresh(['campaign', 'agent', 'acceptedBy', 'rejectedBy', 'items.clothType', 'items.images']);
     }
 
     public function getByAgent($agentId)
@@ -65,6 +65,8 @@ class DonationRepository implements DonationRepositoryInterface
         return [
             'total'                   => $this->model->count(),
             'pending'                 => $this->model->where('status', 'pending')->count(),
+            'accepted'                => $this->model->where('status', 'accepted')->count(),
+            'rejected'                => $this->model->where('status', 'rejected')->count(),
             'assigned'                => $this->model->where('status', 'assigned')->count(),
             'picked_up'               => $this->model->where('status', 'picked_up')->count(),
             'delivered'               => $this->model->where('status', 'delivered')->count(),

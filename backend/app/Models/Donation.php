@@ -20,6 +20,11 @@ class Donation extends Model
         'longitude',
         'address',
         'status',
+        'rejection_reason',
+        'accepted_by',
+        'accepted_at',
+        'rejected_by',
+        'rejected_at',
         'verified_quantity',
         'agent_id',
         'picked_up_at',
@@ -28,6 +33,8 @@ class Donation extends Model
     ];
 
     protected $casts = [
+        'accepted_at'   => 'datetime',
+        'rejected_at'   => 'datetime',
         'picked_up_at'  => 'datetime',
         'delivered_at'  => 'datetime',
         'verified_at'   => 'datetime',
@@ -36,6 +43,16 @@ class Donation extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function acceptedBy()
+    {
+        return $this->belongsTo(User::class, 'accepted_by');
+    }
+
+    public function rejectedBy()
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
     }
 
     public function campaign()

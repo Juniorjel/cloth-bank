@@ -51,6 +51,18 @@ class PermissionSeeder extends Seeder
                 'description' => 'Submit donation forms for walk-in gifts or assisted donor intake.',
             ],
             [
+                'slug'        => 'donations.accept',
+                'name'        => 'Accept / Approve Donation',
+                'module'      => 'Donations',
+                'description' => 'Approve incoming donation submissions for logistics dispatch and warehouse intake.',
+            ],
+            [
+                'slug'        => 'donations.reject',
+                'name'        => 'Reject / Decline Donation',
+                'module'      => 'Donations',
+                'description' => 'Decline unusable, out-of-coverage, or invalid donation submissions with a stated reason.',
+            ],
+            [
                 'slug'        => 'donations.assign_driver',
                 'name'        => 'Dispatch Logistics Drivers',
                 'module'      => 'Donations',
@@ -243,6 +255,8 @@ class PermissionSeeder extends Seeder
         $managerRole->syncPermissions([
             $seededPermissions['dashboard.view']->id,
             $seededPermissions['donations.view']->id,
+            $seededPermissions['donations.accept']->id,
+            $seededPermissions['donations.reject']->id,
             $seededPermissions['donations.verify']->id,
             $seededPermissions['donations.assign_driver']->id,
             $seededPermissions['cloth_types.manage']->id,
@@ -266,6 +280,8 @@ class PermissionSeeder extends Seeder
             $seededPermissions['campaigns.edit']->id,
             $seededPermissions['campaigns.pause_activate']->id,
             $seededPermissions['donations.view']->id,
+            $seededPermissions['donations.accept']->id,
+            $seededPermissions['donations.reject']->id,
             $seededPermissions['reports.view']->id,
         ]);
 

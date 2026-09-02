@@ -93,31 +93,15 @@
           <div class="canvas-container donut-wrap">
             <canvas ref="donutCanvas"></canvas>
           </div>
-          <div class="status-legend mt-3" v-if="stats && stats.status_breakdown">
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#f59e0b"></span>
-              <span class="legend-name">Pending</span>
-              <span class="legend-val">{{ stats.status_breakdown.pending || 0 }}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#4f46e5"></span>
-              <span class="legend-name">Assigned</span>
-              <span class="legend-val">{{ stats.status_breakdown.assigned || 0 }}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#0ea5e9"></span>
-              <span class="legend-name">Picked Up</span>
-              <span class="legend-val">{{ stats.status_breakdown.picked_up || 0 }}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#ef4444"></span>
-              <span class="legend-name">Delivered</span>
-              <span class="legend-val">{{ stats.status_breakdown.delivered || 0 }}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#10b981"></span>
-              <span class="legend-name">Verified</span>
-              <span class="legend-val">{{ stats.status_breakdown.verified || 0 }}</span>
+          <div class="status-legend mt-3" v-if="stats && (stats.statusBreakdown || stats.status_breakdown)">
+            <div
+              v-for="item in (stats.statusBreakdown || defaultStatusList)"
+              :key="item.key"
+              class="legend-item"
+            >
+              <span class="legend-dot" :style="{ background: item.color }"></span>
+              <span class="legend-name">{{ item.status }}</span>
+              <span class="legend-val">{{ item.count !== undefined ? item.count : (stats.status_breakdown && stats.status_breakdown[item.key] || 0) }}</span>
             </div>
           </div>
         </div>
@@ -315,22 +299,27 @@ export default {
       const ctx = this.$refs.donutCanvas.getContext('2d')
       if (this.donutChart) this.donutChart.destroy()
 
-      const sb = (this.stats && this.stats.status_breakdown) || {}
-      const data = [
-        sb.pending || 2,
-        sb.assigned || 3,
-        sb.picked_up || 1,
-        sb.delivered || 1,
-        sb.verified || 5
+      const breakdown = (this.stats && this.stats.statusBreakdown) || [
+        { status: 'Pending',   count: this.stats?.status_breakdown?.pending || 0,   color: '#f59e0b' },
+        { status: 'Accepted',  count: this.stats?.status_breakdown?.accepted || 0,  color: '#6366f1' },
+        { status: 'Assigned',  count: this.stats?.status_breakdown?.assigned || 0,  color: '#0ea5e9' },
+        { status: 'Picked Up', count: this.stats?.status_breakdown?.picked_up || 0, color: '#8b5cf6' },
+        { status: 'Delivered', count: this.stats?.status_breakdown?.delivered || 0, color: '#ec4899' },
+        { status: 'Verified',  count: this.stats?.status_breakdown?.verified || 0,  color: '#10b981' },
+        { status: 'Rejected',  count: this.stats?.status_breakdown?.rejected || 0,  color: '#ef4444' },
       ]
+
+      const labels = breakdown.map(b => b.status)
+      const data   = breakdown.map(b => b.count)
+      const colors = breakdown.map(b => b.color)
 
       this.donutChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: ['Pending', 'Assigned', 'Picked Up', 'Delivered', 'Verified'],
+          labels,
           datasets: [{
             data,
-            backgroundColor: ['#f59e0b', '#4f46e5', '#0ea5e9', '#ef4444', '#10b981'],
+            backgroundColor: colors,
             borderWidth: 0,
             hoverOffset: 4
           }]
